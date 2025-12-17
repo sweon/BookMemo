@@ -64,21 +64,21 @@ const Overlay = styled.div<{ $isOpen: boolean }>`
 `;
 
 export const MainLayout: React.FC = () => {
-    const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-    return (
-        <Container>
-            <Overlay $isOpen={isSidebarOpen} onClick={() => setSidebarOpen(false)} />
-            <SidebarWrapper $isOpen={isSidebarOpen}>
-                <Sidebar onCloseMobile={() => setSidebarOpen(false)} />
-            </SidebarWrapper>
-            <ContentWrapper>
-                <MobileHeader>
-                    <FiMenu size={24} onClick={() => setSidebarOpen(true)} />
-                    <h3>LLM Logger</h3>
-                </MobileHeader>
-                <Outlet />
-            </ContentWrapper>
-        </Container>
-    );
+  return (
+    <Container>
+      <Overlay $isOpen={isSidebarOpen} onClick={() => setSidebarOpen(false)} />
+      <SidebarWrapper $isOpen={isSidebarOpen}>
+        <Sidebar onCloseMobile={() => setSidebarOpen(false)} />
+      </SidebarWrapper>
+      <ContentWrapper>
+        <MobileHeader>
+          <FiMenu size={24} onClick={() => setSidebarOpen(true)} />
+          <h3>LLMemo</h3>
+        </MobileHeader>
+        <Outlet />
+      </ContentWrapper>
+    </Container>
+  );
 };

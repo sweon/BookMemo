@@ -1,4 +1,4 @@
-# LLM Logger App
+# LLMemo
 
 A local-first, offline-capable PWA to log, manage, and search LLM interaction results. Built with Vite, React, TypeScript, and Dexie.js.
 
@@ -20,8 +20,8 @@ A local-first, offline-capable PWA to log, manage, and search LLM interaction re
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/llm-logger.git
-   cd llm-logger
+   git clone https://github.com/yourusername/llmemo.git
+   cd llmemo
    ```
 
 2. Install dependencies:

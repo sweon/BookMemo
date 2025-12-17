@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'LLM Log Manager',
-        short_name: 'LLM Logs',
+        name: 'LLMemo',
+        short_name: 'LLMemo',
         description: 'Offline-capable LLM interaction logger',
         theme_color: '#ffffff',
         icons: [
