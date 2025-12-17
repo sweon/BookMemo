@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import 'katex/dist/katex.min.css';
 import styled from 'styled-components';
 
-const MarkdownContainer = styled.div`
+const MarkdownContainer = styled.div<{ $tableHeaderBg?: string }>`
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.text};
 
@@ -78,7 +78,7 @@ const MarkdownContainer = styled.div`
     }
 
     th {
-      background: ${({ theme }) => theme.colors.surface};
+      background: ${({ theme, $tableHeaderBg }) => $tableHeaderBg || theme.colors.surface};
       font-weight: 600;
     }
   }
@@ -90,9 +90,9 @@ const MarkdownContainer = styled.div`
   }
 `;
 
-export const MarkdownView: React.FC<{ content: string }> = ({ content }) => {
+export const MarkdownView: React.FC<{ content: string; tableHeaderBg?: string }> = ({ content, tableHeaderBg }) => {
   return (
-    <MarkdownContainer>
+    <MarkdownContainer $tableHeaderBg={tableHeaderBg}>
       <ReactMarkdown
         remarkPlugins={[remarkMath, remarkGfm]}
         rehypePlugins={[rehypeKatex]}

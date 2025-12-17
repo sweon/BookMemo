@@ -7,6 +7,7 @@ import { MarkdownEditor } from '../Editor/MarkdownEditor';
 import { MarkdownView } from '../Editor/MarkdownView';
 import { FiEdit2, FiTrash2, FiPlus, FiSave, FiX } from 'react-icons/fi';
 import { format } from 'date-fns';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Section = styled.div`
   margin-top: 3rem;
@@ -69,6 +70,7 @@ const AddButton = styled.button`
 `;
 
 export const CommentsSection: React.FC<{ logId: number }> = ({ logId }) => {
+    const { theme } = useTheme(); // Access the current theme object
     const comments = useLiveQuery(
         () => db.comments.where('logId').equals(logId).sortBy('createdAt'),
         [logId]
@@ -140,7 +142,7 @@ export const CommentsSection: React.FC<{ logId: number }> = ({ logId }) => {
                         {editingId === c.id ? (
                             <MarkdownEditor value={editContent} onChange={setEditContent} />
                         ) : (
-                            <MarkdownView content={c.content} />
+                            <MarkdownView content={c.content} tableHeaderBg={theme.colors.border} />
                         )}
                     </CommentItem>
                 ))}
