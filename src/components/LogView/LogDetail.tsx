@@ -117,7 +117,7 @@ export const LogDetail: React.FC = () => {
         [id]
     );
 
-    const models = useLiveQuery(() => db.models.toArray());
+    const models = useLiveQuery(() => db.models.orderBy('id').reverse().toArray());
 
     useEffect(() => {
         if (log) {

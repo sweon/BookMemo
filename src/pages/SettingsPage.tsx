@@ -69,7 +69,7 @@ const Button = styled.button`
 `;
 
 export const SettingsPage: React.FC = () => {
-    const models = useLiveQuery(() => db.models.toArray());
+    const models = useLiveQuery(() => db.models.orderBy('id').reverse().toArray());
     const [newModel, setNewModel] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 

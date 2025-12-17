@@ -139,7 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
-  const models = useLiveQuery(() => db.models.toArray());
+  const models = useLiveQuery(() => db.models.orderBy('id').reverse().toArray());
 
   const logs = useLiveQuery(async () => {
     let collection = db.logs.toArray();
