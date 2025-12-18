@@ -69,6 +69,23 @@ const AddButton = styled.button`
   cursor: pointer;
 `;
 
+const CancelButton = styled.button`
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  cursor: pointer;
+  
+  &:hover {
+    background: ${({ theme }) => theme.colors.surface};
+  }
+`;
+
 export const CommentsSection: React.FC<{ logId: number }> = ({ logId }) => {
     const { theme } = useTheme(); // Access the current theme object
     const comments = useLiveQuery(
@@ -152,8 +169,8 @@ export const CommentsSection: React.FC<{ logId: number }> = ({ logId }) => {
                 <div style={{ marginTop: '1rem' }}>
                     <MarkdownEditor value={newContent} onChange={setNewContent} />
                     <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
-                        <AddButton onClick={handleAdd}>Saved Comment</AddButton>
-                        <button onClick={() => setIsAdding(false)} style={{ padding: '0.5rem' }}>Cancel</button>
+                        <AddButton onClick={handleAdd}>Save Comment</AddButton>
+                        <CancelButton onClick={() => setIsAdding(false)}>Cancel</CancelButton>
                     </div>
                 </div>
             ) : (
