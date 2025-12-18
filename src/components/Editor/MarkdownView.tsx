@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkMath from 'remark-math';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import 'katex/dist/katex.min.css';
 import styled from 'styled-components';
 
@@ -94,7 +95,7 @@ export const MarkdownView: React.FC<{ content: string; tableHeaderBg?: string }>
   return (
     <MarkdownContainer $tableHeaderBg={tableHeaderBg}>
       <ReactMarkdown
-        remarkPlugins={[remarkMath, remarkGfm]}
+        remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeKatex]}
       >
         {content}
