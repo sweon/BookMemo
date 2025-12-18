@@ -232,7 +232,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             $isActive={Number(id) === log.id}
             onClick={onCloseMobile}
           >
-            <LogTitle>{log.title || 'Untitled Log'}</LogTitle>
+            <LogTitle title={log.title || 'Untitled Log'}>{log.title || 'Untitled Log'}</LogTitle>
             <LogDate>
               {format(log.createdAt, 'MMM d, yyyy HH:mm')}
               {sortBy === 'model' && log.modelId && models && (
