@@ -15,7 +15,8 @@ const Overlay = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -24,6 +25,7 @@ const Overlay = styled.div`
 
 const ModalContainer = styled.div`
     background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     width: 450px;
     max-width: 90%;
@@ -51,6 +53,7 @@ const Header = styled.div`
 const TabContainer = styled.div`
     display: flex;
     background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
 `;
 
 const Tab = styled.button<{ $active: boolean }>`
@@ -58,11 +61,16 @@ const Tab = styled.button<{ $active: boolean }>`
     padding: 16px;
     background: ${props => props.$active ? 'var(--bg-secondary)' : 'transparent'};
     border: none;
+    border-right: 1px solid var(--border-color);
     border-bottom: 2px solid ${props => props.$active ? 'var(--primary-color)' : 'transparent'};
     color: ${props => props.$active ? 'var(--primary-color)' : 'var(--text-secondary)'};
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+
+    &:last-child {
+        border-right: none;
+    }
 
     &:hover {
         background: var(--bg-secondary);
