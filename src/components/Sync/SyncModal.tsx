@@ -68,19 +68,27 @@ const TabContainer = styled.div`
     gap: 24px;
 `;
 
-const Tab = styled.button<{ $active: boolean }>`
+const Tab = styled.button<{ $active: boolean; $type: 'host' | 'join' }>`
     padding: 16px 4px;
     background: transparent;
     border: none;
-    border-bottom: 3px solid ${props => props.$active ? 'var(--primary-color)' : 'transparent'};
-    color: ${props => props.$active ? 'var(--primary-color)' : 'var(--text-secondary)'};
+    border-bottom: 3px solid ${props => {
+        if (!props.$active) return 'transparent';
+        return props.$type === 'host' ? '#6a11cb' : '#2575fc';
+    }};
+    color: ${props => {
+        if (!props.$active) return 'var(--text-secondary)';
+        return props.$type === 'host' ? '#6a11cb' : '#2575fc';
+    }};
     font-weight: ${props => props.$active ? '600' : '500'};
     cursor: pointer;
     transition: all 0.2s;
     font-size: 1rem;
 
     &:hover {
-        color: ${props => props.$active ? 'var(--primary-color)' : 'var(--text-primary)'};
+        color: ${props => props.$active
+        ? (props.$type === 'host' ? '#6a11cb' : '#2575fc')
+        : 'var(--text-primary)'};
     }
     
     &:disabled {
@@ -306,6 +314,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                 <TabContainer>
                     <Tab
                         $active={activeTab === 'host'}
+                        $type="host"
                         onClick={() => setActiveTab('host')}
                         disabled={status === 'connected' || status === 'syncing'}
                     >
@@ -313,6 +322,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                     </Tab>
                     <Tab
                         $active={activeTab === 'join'}
+                        $type="join"
                         onClick={() => setActiveTab('join')}
                         disabled={status === 'connected' || status === 'syncing'}
                     >
@@ -340,6 +350,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                             </InputGroup>
                             <Button
                                 $fullWidth
+                                $variant="host"
                                 onClick={startHosting}
                                 disabled={status === 'connected' || status === 'syncing'}
                             >
@@ -359,6 +370,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                             </InputGroup>
                             <Button
                                 $fullWidth
+                                $variant="join"
                                 onClick={connectToPeer}
                                 disabled={!targetRoomId || status === 'connected' || status === 'syncing'}
                             >
