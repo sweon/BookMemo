@@ -11,27 +11,28 @@ const downloadFile = (content: string, fileName: string, contentType: string) =>
     a.click();
 };
 
-export const exportData = async (selectedLogIds?: number[], customFileName?: string) => {
+
+export const getBackupData = async () => {
     let logs = await db.logs.toArray();
-
-    if (selectedLogIds && selectedLogIds.length > 0) {
-        logs = logs.filter(l => l.id !== undefined && selectedLogIds.includes(l.id));
-    }
-
     const models = await db.models.toArray();
     let comments = await db.comments.toArray();
 
-    if (selectedLogIds && selectedLogIds.length > 0) {
-        comments = comments.filter(c => selectedLogIds.includes(c.logId));
-    }
-
-    const data = {
+    return {
         version: 1,
         timestamp: new Date().toISOString(),
         logs,
         models,
         comments
     };
+};
+
+export const exportData = async (selectedLogIds?: number[], customFileName?: string) => {
+    let data = await getBackupData();
+
+    if (selectedLogIds && selectedLogIds.length > 0) {
+        data.logs = data.logs.filter(l => l.id !== undefined && selectedLogIds.includes(l.id));
+        data.comments = data.comments.filter(c => selectedLogIds.includes(c.logId));
+    }
 
     let fileName = customFileName;
     if (!fileName) {
@@ -47,6 +48,7 @@ export const exportData = async (selectedLogIds?: number[], customFileName?: str
     downloadFile(JSON.stringify(data, null, 2), fileName, 'application/json');
 };
 
+
 export const importData = async (file: File) => {
     return new Promise<void>((resolve, reject) => {
         const reader = new FileReader();
@@ -54,90 +56,101 @@ export const importData = async (file: File) => {
             try {
                 const text = e.target?.result as string;
                 const data = JSON.parse(text);
-
-                if (!data.logs || !data.models) {
-                    throw new Error('Invalid backup file format');
-                }
-
-                await db.transaction('rw', db.logs, db.models, db.comments, async () => {
-                    // Merge strategy: Add all. Dexie handles auto-increment IDs.
-                    // However, if we blindly add, we duplicate.
-                    // A smarter merge would preserve content but map IDs?
-                    // Or just clear and replace?
-                    // User said "Merge", "Existing data maintained while adding".
-                    // If we allow ID conflict, Dexie will error if key exists.
-                    // Since we use auto-increment keys, if we strip IDs from import, they get new IDs.
-                    // But relations (LogId -> ModelId) need to be preserved.
-
-                    // Complex Merge Logic:
-                    // 1. Import Models. Match by name. If exists, use existing ID. If not, add and get new ID. Map oldModelId -> newModelId.
-                    // 2. Import Logs. Strip ID. Add. Map oldLogId -> newLogId. Update modelId using map.
-                    // 3. Import Comments. Strip ID. Update logId using map.
-
-                    const modelIdMap = new Map<number, number>();
-
-                    for (const m of data.models) {
-                        const oldId = m.id;
-                        delete m.id; // Let DB assign new ID
-
-                        // Check if model with same name exists
-                        const existing = await db.models.where('name').equals(m.name).first();
-                        if (existing) {
-                            modelIdMap.set(oldId, existing.id!);
-                        } else {
-                            const newId = await db.models.add(m);
-                            modelIdMap.set(oldId, newId as number);
-                        }
-                    }
-
-                    const logIdMap = new Map<number, number>();
-
-                    for (const l of data.logs) {
-                        const oldId = l.id;
-                        delete l.id;
-
-                        // Hydrate dates
-                        if (typeof l.createdAt === 'string') l.createdAt = new Date(l.createdAt);
-                        if (typeof l.updatedAt === 'string') l.updatedAt = new Date(l.updatedAt);
-
-                        // Update modelId
-                        if (l.modelId !== undefined) {
-                            if (modelIdMap.has(l.modelId)) {
-                                l.modelId = modelIdMap.get(l.modelId);
-                            } else {
-                                // If model ID is not found in map (meaning it wasn't in imported models or pre-existing),
-                                // we should probably strip it or set to undefined effectively, to avoid pointing to a wrong integer.
-                                // Dexie won't crash on foreign key usually, but app logic might look up model by ID and fail.
-                                l.modelId = undefined;
-                            }
-                        }
-
-                        // Add log
-                        const newId = await db.logs.add(l);
-                        logIdMap.set(oldId, newId as number);
-                    }
-
-                    if (data.comments) {
-                        for (const c of data.comments) {
-                            delete c.id;
-
-                            // Hydrate dates
-                            if (typeof c.createdAt === 'string') c.createdAt = new Date(c.createdAt);
-                            if (typeof c.updatedAt === 'string') c.updatedAt = new Date(c.updatedAt);
-
-                            if (c.logId && logIdMap.has(c.logId)) {
-                                c.logId = logIdMap.get(c.logId);
-                                await db.comments.add(c);
-                            }
-                        }
-                    }
-                });
-
+                await mergeBackupData(data);
                 resolve();
             } catch (err) {
                 reject(err);
             }
         };
+
         reader.readAsText(file);
+    });
+};
+
+export const mergeBackupData = async (data: any) => {
+    if (!data.logs || !data.models) {
+        throw new Error('Invalid backup file format');
+    }
+
+    await db.transaction('rw', db.logs, db.models, db.comments, async () => {
+        const modelIdMap = new Map<number, number>();
+
+        for (const m of data.models) {
+            const oldId = m.id;
+            const existing = await db.models.where('name').equals(m.name).first();
+
+            if (existing) {
+                modelIdMap.set(oldId, existing.id!);
+            } else {
+                // Ensure we don't try to add with an ID if it's auto-increment, though we should strip it
+                // Actually, let's just strip ID to be safe and let Dexie assign
+                const { id, ...modelData } = m;
+                const newId = await db.models.add(modelData);
+                modelIdMap.set(oldId, newId as number);
+            }
+        }
+
+        const logIdMap = new Map<number, number>();
+
+        for (const l of data.logs) {
+            const oldId = l.id; // Store old ID for mapping comments
+
+            // Check if log already exists (by some criteria? or just always add?)
+            // Requirement says "Merge".
+            // Let's check if a log with same Title and CreatedAt exists? 
+            // This prevents duplicate imports of the same backup.
+            let existingLog = null;
+            /* 
+               Dexie doesn't support multi-key unique constraint easily on object store creation unless specified.
+               We will check manually.
+           */
+            // Hydrate dates first for comparison
+            const createdAt = typeof l.createdAt === 'string' ? new Date(l.createdAt) : l.createdAt;
+
+            // Try to find exact match
+            const potentialMatches = await db.logs.where('title').equals(l.title).toArray();
+            existingLog = potentialMatches.find(pl => Math.abs(pl.createdAt.getTime() - createdAt.getTime()) < 1000); // 1s tolerance
+
+            if (existingLog) {
+                logIdMap.set(oldId, existingLog.id!);
+            } else {
+                const { id, ...logData } = l;
+                logData.createdAt = createdAt;
+                logData.updatedAt = typeof l.updatedAt === 'string' ? new Date(l.updatedAt) : l.updatedAt;
+
+                if (logData.modelId !== undefined) {
+                    if (modelIdMap.has(logData.modelId)) {
+                        logData.modelId = modelIdMap.get(logData.modelId);
+                    } else {
+                        logData.modelId = undefined;
+                    }
+                }
+                const newId = await db.logs.add(logData);
+                logIdMap.set(oldId, newId as number);
+            }
+        }
+
+        if (data.comments) {
+            for (const c of data.comments) {
+                const { id, ...commentData } = c;
+                commentData.createdAt = typeof c.createdAt === 'string' ? new Date(c.createdAt) : c.createdAt;
+                commentData.updatedAt = typeof c.updatedAt === 'string' ? new Date(c.updatedAt) : c.updatedAt;
+
+                if (commentData.logId && logIdMap.has(commentData.logId)) {
+                    commentData.logId = logIdMap.get(commentData.logId);
+
+                    // Check for duplicates? Content + Date + LogId
+                    const duplicates = await db.comments.where('logId').equals(commentData.logId).toArray();
+                    const exists = duplicates.some(d =>
+                        d.content === commentData.content &&
+                        Math.abs(d.createdAt.getTime() - commentData.createdAt.getTime()) < 1000
+                    );
+
+                    if (!exists) {
+                        await db.comments.add(commentData);
+                    }
+                }
+            }
+        }
     });
 };

@@ -3,7 +3,8 @@ import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
 import { Link, useNavigate, useParams } from 'react-router-dom'; // Ensure react-router-dom is installed
-import { FiPlus, FiSettings, FiSun, FiMoon, FiSearch, FiX } from 'react-icons/fi';
+import { FiPlus, FiSettings, FiSun, FiMoon, FiSearch, FiX, FiRefreshCw } from 'react-icons/fi';
+import { SyncModal } from '../Sync/SyncModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSearch } from '../../contexts/SearchContext';
 import { format } from 'date-fns';
@@ -160,6 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const { mode, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   const models = useLiveQuery(() => db.models.orderBy('id').reverse().toArray());
 
@@ -272,13 +274,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       </LogList>
 
       <Footer>
-        <IconButton onClick={() => navigate('/settings')} title="Settings">
-          <FiSettings size={20} />
-        </IconButton>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <IconButton onClick={() => navigate('/settings')} title="Settings">
+            <FiSettings size={20} />
+          </IconButton>
+          <IconButton onClick={() => setIsSyncModalOpen(true)} title="Sync">
+            <FiRefreshCw size={20} />
+          </IconButton>
+        </div>
         <IconButton onClick={toggleTheme} title="Toggle Theme">
           {mode === 'light' ? <FiMoon size={20} /> : <FiSun size={20} />}
         </IconButton>
       </Footer>
+      <SyncModal isOpen={isSyncModalOpen} onClose={() => setIsSyncModalOpen(false)} />
     </SidebarContainer>
   );
 };
