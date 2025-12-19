@@ -41,15 +41,18 @@ const Header = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 24px;
+    border-bottom: 2px solid var(--border-color);
+    background-color: var(--bg-tertiary);
 
     h2 {
         margin: 0;
-        font-size: 1.2rem;
+        font-size: 1.4rem;
+        font-weight: 600;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        color: var(--primary-color);
     }
 `;
 
@@ -57,27 +60,28 @@ const TabContainer = styled.div`
     display: flex;
     background-color: var(--bg-tertiary);
     border-bottom: 1px solid var(--border-color);
+    padding: 0 24px;
+    gap: 24px;
 `;
 
 const Tab = styled.button<{ $active: boolean }>`
-    flex: 1;
-    padding: 16px;
-    background: ${props => props.$active ? 'var(--bg-secondary)' : 'transparent'};
+    padding: 16px 4px;
+    background: transparent;
     border: none;
-    border-right: 1px solid var(--border-color);
-    border-bottom: 2px solid ${props => props.$active ? 'var(--primary-color)' : 'transparent'};
+    border-bottom: 3px solid ${props => props.$active ? 'var(--primary-color)' : 'transparent'};
     color: ${props => props.$active ? 'var(--primary-color)' : 'var(--text-secondary)'};
-    font-weight: 500;
+    font-weight: ${props => props.$active ? '600' : '500'};
     cursor: pointer;
     transition: all 0.2s;
-
-    &:last-child {
-        border-right: none;
-    }
+    font-size: 1rem;
 
     &:hover {
-        background: var(--bg-secondary);
         color: ${props => props.$active ? 'var(--primary-color)' : 'var(--text-primary)'};
+    }
+    
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 `;
 
@@ -112,22 +116,25 @@ const InputGroup = styled.div`
 
 const Input = styled.input`
     flex: 1;
-    padding: 12px;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
+    padding: 14px;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-family: monospace;
+    transition: border-color 0.2s;
 
     &:focus {
         outline: none;
         border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
     }
     
     &:disabled {
         background-color: var(--bg-tertiary);
         color: var(--text-secondary);
+        border-color: transparent;
     }
 `;
 
@@ -172,24 +179,34 @@ const Button = styled.button<{ $variant?: 'primary' | 'secondary'; $fullWidth?: 
 `;
 
 const StatusBox = styled.div<{ $status: SyncStatus }>`
-    padding: 12px;
-    border-radius: 6px;
-    background-color: var(--bg-tertiary);
-    margin-top: 20px;
+    padding: 16px;
+    border-radius: 8px;
+    background-color: var(--bg-primary);
+    margin-top: 24px;
     text-align: center;
-    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    
     color: ${props => {
-        if (props.$status === 'error') return '#ff6b6b';
-        if (props.$status === 'completed') return '#51cf66';
-        if (props.$status === 'connected') return '#339af0';
+        if (props.$status === 'error') return '#fa5252';
+        if (props.$status === 'completed') return '#40c057';
+        if (props.$status === 'connected') return '#228be6';
+        if (props.$status === 'connecting') return '#fab005';
         return 'var(--text-secondary)';
     }};
+    
     border: 1px solid ${props => {
-        if (props.$status === 'error') return '#ff6b6b40';
-        if (props.$status === 'completed') return '#51cf6640';
-        if (props.$status === 'connected') return '#339af040';
-        return 'transparent';
+        if (props.$status === 'error') return '#fa525240';
+        if (props.$status === 'completed') return '#40c05740';
+        if (props.$status === 'connected') return '#228be640';
+        if (props.$status === 'connecting') return '#fab00540';
+        return 'var(--border-color)';
     }};
+
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 `;
 
 
