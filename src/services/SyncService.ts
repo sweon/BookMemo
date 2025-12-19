@@ -12,6 +12,7 @@ export class SyncService {
     private peer: Peer | null = null;
     private conn: DataConnection | null = null;
     private options: SyncServiceOptions;
+    private heartbeatInterval: any = null;
 
     constructor(options: SyncServiceOptions) {
         this.options = options;
@@ -72,12 +73,20 @@ export class SyncService {
         conn.on('open', async () => {
             this.options.onStatusChange('connected', 'Peer Connected!');
 
+            // Start Heartbeat
+            this.startHeartbeat();
+
             // Auto sync on connect?
             // Let's send our data immediately
             await this.syncData();
         });
 
-        conn.on('data', async (data) => {
+        conn.on('data', async (data: any) => {
+            // Handle Heartbeat
+            if (data && data.type === 'ping') {
+                return;
+            }
+
             this.options.onStatusChange('syncing', 'Receiving data...');
             try {
                 await mergeBackupData(data);
@@ -89,13 +98,31 @@ export class SyncService {
         });
 
         conn.on('close', () => {
+            this.stopHeartbeat();
             this.options.onStatusChange('disconnected', 'Connection Closed');
             this.conn = null;
         });
 
         conn.on('error', (err) => {
+            this.stopHeartbeat();
             this.options.onStatusChange('error', `Connection Error: ${err.message}`);
         });
+    }
+
+    private startHeartbeat() {
+        this.stopHeartbeat();
+        this.heartbeatInterval = setInterval(() => {
+            if (this.conn && this.conn.open) {
+                this.conn.send({ type: 'ping' });
+            }
+        }, 5000); // Send ping every 5 seconds
+    }
+
+    private stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
     }
 
     public async syncData() {
@@ -117,6 +144,7 @@ export class SyncService {
     }
 
     public destroy() {
+        this.stopHeartbeat();
         if (this.conn) {
             this.conn.close();
         }

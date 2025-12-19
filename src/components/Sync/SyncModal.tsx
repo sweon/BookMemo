@@ -2,7 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { SyncService, type SyncStatus } from '../../services/SyncService';
 import { FaTimes, FaSync, FaRegCopy, FaRedo } from 'react-icons/fa';
-import { v4 as uuidv4 } from 'uuid';
+
+const generateShortId = () => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
 
 interface SyncModalProps {
     isOpen: boolean;
@@ -203,7 +206,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
         if (isOpen) {
             // Auto generate ID if empty
             if (!roomId) {
-                setRoomId(uuidv4());
+                setRoomId(generateShortId());
             }
         } else {
             // Cleanup
@@ -256,7 +259,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
 
     const regenerateId = () => {
         if (status !== 'disconnected' && status !== 'error' && status !== 'completed') return;
-        setRoomId(uuidv4());
+        setRoomId(generateShortId());
     };
 
     if (!isOpen) return null;
@@ -292,9 +295,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                             <Label>Your Room ID</Label>
                             <InputGroup>
                                 <Input
-                                    readOnly
                                     value={roomId}
+                                    onChange={e => setRoomId(e.target.value)}
                                     disabled={status === 'connected'}
+                                    placeholder="Enter your custom ID"
                                 />
                                 <IconButton onClick={copyToClipboard} title="Copy ID">
                                     <FaRegCopy />
