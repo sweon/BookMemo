@@ -8,6 +8,10 @@ export interface SyncServiceOptions {
     onDataReceived: () => void;
 }
 
+export const cleanRoomId = (roomId: string): string => {
+    return roomId.trim().replace(/[^a-zA-Z0-9_-]/g, '-');
+};
+
 export class SyncService {
     private peer: Peer | null = null;
     private conn: DataConnection | null = null;
@@ -27,7 +31,7 @@ export class SyncService {
             }
 
             // Clean the ID to be safe for PeerJS
-            const cleanId = roomId.replace(/[^a-zA-Z0-9_-]/g, '-');
+            const cleanId = cleanRoomId(roomId);
             this.peer = new Peer(cleanId);
 
             this.peer.on('open', (id) => {
@@ -51,13 +55,13 @@ export class SyncService {
             // If connecting as client without hosting, we need a random ID
             this.peer = new Peer();
             this.peer.on('open', () => {
-                this._connect(targetPeerId);
+                this._connect(cleanRoomId(targetPeerId));
             });
             this.peer.on('error', (err) => {
                 this.options.onStatusChange('error', `Peer Error: ${err.message}`);
             });
         } else {
-            this._connect(targetPeerId);
+            this._connect(cleanRoomId(targetPeerId));
         }
     }
 

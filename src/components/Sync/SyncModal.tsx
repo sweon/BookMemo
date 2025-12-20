@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { SyncService, type SyncStatus } from '../../services/SyncService';
+import { SyncService, cleanRoomId, type SyncStatus } from '../../services/SyncService';
 import { FaTimes, FaSync, FaRegCopy, FaRedo, FaCamera, FaStop } from 'react-icons/fa';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -290,17 +290,48 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                 setRoomId(generateShortId());
             }
         }
-        // Removing automatic cleanup in useEffect to prevent accidental closure during potential re-renders.
-        // Cleanup is now handled strictly in handleClose.
     }, [isOpen]);
 
+    useEffect(() => {
+        // Handle scanner lifecycle
+        if (isScanning && !scannerRef.current) {
+            const scanner = new Html5QrcodeScanner(
+                "reader",
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                /* verbose= */ false
+            );
+
+            scanner.render((decodedText) => {
+                console.log('Scanned text:', decodedText);
+                setTargetRoomId(decodedText);
+                connectToPeer(decodedText);
+            }, () => {
+                // Occasional scanning errors are expected and usually ignored
+            });
+
+            scannerRef.current = scanner;
+        }
+
+        return () => {
+            if (!isScanning && scannerRef.current) {
+                scannerRef.current.clear().catch(err => console.error("Scanner clear error", err));
+                scannerRef.current = null;
+            }
+        };
+    }, [isScanning]);
+
     const handleClose = () => {
+        if (scannerRef.current) {
+            scannerRef.current.clear().catch(console.error);
+            scannerRef.current = null;
+        }
         if (syncService.current) {
             syncService.current.destroy();
             syncService.current = null;
         }
         setStatus('disconnected');
         setStatusMessage('');
+        setIsScanning(false);
         onClose();
     };
 
@@ -343,29 +374,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
 
     const startScanning = () => {
         setIsScanning(true);
-        setTimeout(() => {
-            const scanner = new Html5QrcodeScanner(
-                "reader",
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                /* verbose= */ false
-            );
-
-            scanner.render((decodedText) => {
-                setTargetRoomId(decodedText);
-                connectToPeer(decodedText);
-            }, () => {
-                // Ignore errors
-            });
-
-            scannerRef.current = scanner;
-        }, 100);
     };
 
     const stopScanning = () => {
-        if (scannerRef.current) {
-            scannerRef.current.clear().catch(console.error);
-            scannerRef.current = null;
-        }
         setIsScanning(false);
     };
 
@@ -438,7 +449,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
 
                             {status === 'connected' && (
                                 <QRContainer>
-                                    <QRCodeSVG value={roomId} size={200} level="H" />
+                                    <QRCodeSVG value={cleanRoomId(roomId)} size={200} level="H" />
                                 </QRContainer>
                             )}
                         </>
