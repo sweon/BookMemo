@@ -18,6 +18,7 @@ export class SyncService {
     private options: SyncServiceOptions;
     private heartbeatInterval: any = null;
     private lastPong: number = 0;
+    private isHost: boolean = false;
 
     constructor(options: SyncServiceOptions) {
         this.options = options;
@@ -26,6 +27,7 @@ export class SyncService {
     }
 
     public async initialize(roomId: string): Promise<string> {
+        this.isHost = true;
         return new Promise((resolve, reject) => {
             if (this.peer) {
                 this.peer.destroy();
@@ -47,7 +49,7 @@ export class SyncService {
             });
 
             this.peer.on('open', (id) => {
-                this.options.onStatusChange('ready', `Host ID: ${id}`);
+                this.options.onStatusChange('ready', `Host Mode: ${id}`);
                 resolve(id);
             });
 
@@ -70,6 +72,7 @@ export class SyncService {
     }
 
     public connect(targetPeerId: string) {
+        this.isHost = false;
         if (!this.peer) {
             // If connecting as client without hosting, we need a random ID
             this.peer = new Peer({
@@ -118,8 +121,8 @@ export class SyncService {
             this.lastPong = Date.now();
             this.startHeartbeat();
 
-            // Host side waits a bit longer to let client initiate or prepare
-            const delay = this.peer?.id === conn.peer ? 500 : 1500;
+            // Host side waits for client to initiate, or wait longer to be safe
+            const delay = this.isHost ? 2000 : 500;
 
             setTimeout(async () => {
                 if (this.conn && this.conn.open) {
@@ -139,18 +142,25 @@ export class SyncService {
                 return;
             }
 
-            this.options.onStatusChange('syncing', 'Receiving and merging data...');
-            try {
-                await mergeBackupData(data);
-                this.options.onStatusChange('completed', 'Sync Completed Successfully!');
+            // Actual data received
+            if (data && data.logs && data.models) {
+                const logCount = data.logs.length;
+                this.options.onStatusChange('syncing', `Receiving ${logCount} logs and ${data.models.length} models...`);
 
-                // Signal data received - the UI will handle the reload with delay
-                setTimeout(() => {
-                    this.options.onDataReceived();
-                }, 500);
-            } catch (err: any) {
-                console.error('Merge Error:', err);
-                this.options.onStatusChange('error', `Sync Failed: ${err.message}`);
+                try {
+                    await mergeBackupData(data);
+                    this.options.onStatusChange('completed', `Sync Completed! Merged ${logCount} logs.`);
+
+                    // Signal data received - the UI will handle the reload with delay
+                    setTimeout(() => {
+                        this.options.onDataReceived();
+                    }, 1000);
+                } catch (err: any) {
+                    console.error('Merge Error:', err);
+                    this.options.onStatusChange('error', `Merge Failed: ${err.message}`);
+                }
+            } else {
+                console.warn('Received unknown data type:', data);
             }
         });
 
@@ -201,12 +211,15 @@ export class SyncService {
             return;
         }
 
-        this.options.onStatusChange('syncing', 'Building and sending data...');
         try {
+            this.options.onStatusChange('syncing', 'Gathering data to send...');
             const data = await getBackupData();
+
             if (this.conn && this.conn.open) {
+                const logCount = data.logs.length;
+                this.options.onStatusChange('syncing', `Sending ${logCount} logs to peer...`);
                 this.conn.send(data);
-                console.log('Data sent to peer');
+                console.log(`Sent ${logCount} logs to peer`);
             }
         } catch (err: any) {
             console.error('Send Error:', err);
