@@ -3,7 +3,8 @@ import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
 import { Link, useNavigate, useParams } from 'react-router-dom'; // Ensure react-router-dom is installed
-import { FiPlus, FiSettings, FiSun, FiMoon, FiSearch, FiX, FiRefreshCw } from 'react-icons/fi';
+import { FiPlus, FiSettings, FiSun, FiMoon, FiSearch, FiX, FiRefreshCw, FiDownload } from 'react-icons/fi';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import { SyncModal } from '../Sync/SyncModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSearch } from '../../contexts/SearchContext';
@@ -13,6 +14,19 @@ const SidebarContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
 `;
 
 const Header = styled.div`
@@ -162,6 +176,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('SW Registered: ' + r)
+    },
+    onRegisterError(error) {
+      console.log('SW registration error', error)
+    },
+  });
+
+  const handleUpdateCheck = async () => {
+    if (needRefresh) {
+      updateServiceWorker(true);
+      return;
+    }
+
+    setIsCheckingUpdate(true);
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.update();
+        // Give it a moment to detect changes
+        setTimeout(() => setIsCheckingUpdate(false), 1000);
+      } catch (error) {
+        console.error('Error checking for updates:', error);
+        setIsCheckingUpdate(false);
+      }
+    } else {
+      setIsCheckingUpdate(false);
+    }
+  };
 
   const models = useLiveQuery(() => db.models.orderBy('id').reverse().toArray());
 
@@ -280,6 +329,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           </IconButton>
           <IconButton onClick={() => setIsSyncModalOpen(true)} title="Sync">
             <FiRefreshCw size={20} />
+          </IconButton>
+          <IconButton
+            onClick={handleUpdateCheck}
+            title={needRefresh ? "New Version Available - Click to Install" : "Check for Updates"}
+            style={{ position: 'relative' }}
+          >
+            <FiDownload size={20} className={isCheckingUpdate ? 'spin' : ''} />
+            {needRefresh && (
+              <span style={{
+                position: 'absolute',
+                top: '4px',
+                right: '4px',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: '#ef4444', // Red for notification
+                border: '1px solid white'
+              }} />
+            )}
           </IconButton>
         </div>
         <IconButton onClick={toggleTheme} title="Toggle Theme">
