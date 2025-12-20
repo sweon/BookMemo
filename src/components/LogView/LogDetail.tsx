@@ -140,9 +140,7 @@ export const LogDetail: React.FC = () => {
     // Set default model if new and models loaded
     useEffect(() => {
         if (isNew && !modelId && models && models.length > 0) {
-            const def = models.find(m => m.isDefault);
-            if (def) setModelId(def.id);
-            else setModelId(models[0].id);
+            setModelId(models[0].id);
         }
     }, [isNew, modelId, models]);
 
