@@ -5,7 +5,6 @@ import { db } from '../../db';
 import { Link, useNavigate, useParams } from 'react-router-dom'; // Ensure react-router-dom is installed
 import { FiPlus, FiSettings, FiSun, FiMoon, FiSearch, FiX, FiRefreshCw, FiDownload } from 'react-icons/fi';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { Tooltip } from '../UI/Tooltip';
 import { SyncModal } from '../Sync/SyncModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSearch } from '../../contexts/SearchContext';
@@ -325,45 +324,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
 
       <Footer>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <Tooltip content="Settings">
-            <IconButton onClick={() => navigate('/settings')}>
-              <FiSettings size={20} />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip content="Sync Data">
-            <IconButton onClick={() => setIsSyncModalOpen(true)}>
-              <FiRefreshCw size={20} />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip content={needRefresh ? "Install Update" : "Check for Updates"}>
-            <IconButton
-              onClick={handleUpdateCheck}
-              style={{ position: 'relative' }}
-            >
-              <FiDownload size={20} className={isCheckingUpdate ? 'spin' : ''} />
-              {needRefresh && (
-                <span style={{
-                  position: 'absolute',
-                  top: '4px',
-                  right: '4px',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  backgroundColor: '#ef4444', // Red for notification
-                  border: '1px solid white'
-                }} />
-              )}
-            </IconButton>
-          </Tooltip>
-        </div>
-
-        <Tooltip content={mode === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}>
-          <IconButton onClick={toggleTheme}>
-            {mode === 'light' ? <FiMoon size={20} /> : <FiSun size={20} />}
+          <IconButton onClick={() => navigate('/settings')} title="Settings">
+            <FiSettings size={20} />
           </IconButton>
-        </Tooltip>
+          <IconButton onClick={() => setIsSyncModalOpen(true)} title="Sync">
+            <FiRefreshCw size={20} />
+          </IconButton>
+          <IconButton
+            onClick={handleUpdateCheck}
+            title={needRefresh ? "New Version Available - Click to Install" : "Check for Updates"}
+            style={{ position: 'relative' }}
+          >
+            <FiDownload size={20} className={isCheckingUpdate ? 'spin' : ''} />
+            {needRefresh && (
+              <span style={{
+                position: 'absolute',
+                top: '4px',
+                right: '4px',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: '#ef4444', // Red for notification
+                border: '1px solid white'
+              }} />
+            )}
+          </IconButton>
+        </div>
+        <IconButton onClick={toggleTheme} title="Toggle Theme">
+          {mode === 'light' ? <FiMoon size={20} /> : <FiSun size={20} />}
+        </IconButton>
       </Footer>
       <SyncModal isOpen={isSyncModalOpen} onClose={() => setIsSyncModalOpen(false)} />
     </SidebarContainer>
