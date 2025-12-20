@@ -14,6 +14,7 @@ export interface Model {
     id?: number;
     name: string;
     isDefault?: boolean;
+    order?: number;
 }
 
 export interface Comment {
@@ -32,9 +33,13 @@ export class LLMLogDatabase extends Dexie {
     constructor() {
         super('LLMLogDB');
         this.version(1).stores({
-            logs: '++id, title, *tags, modelId, createdAt, updatedAt', // Primary key and indexed props
+            logs: '++id, title, *tags, modelId, createdAt, updatedAt',
             models: '++id, name',
             comments: '++id, logId, createdAt'
+        });
+
+        this.version(2).stores({
+            models: '++id, name, order'
         });
     }
 }

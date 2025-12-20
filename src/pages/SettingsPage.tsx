@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { exportData, importData } from '../utils/backup';
-import { FiTrash2, FiPlus, FiDownload, FiUpload } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiDownload, FiUpload, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 
 const Container = styled.div`
   padding: 2rem;
@@ -144,7 +144,24 @@ const CheckboxLabel = styled.label`
 `;
 
 export const SettingsPage: React.FC = () => {
-    const models = useLiveQuery(() => db.models.orderBy('id').reverse().toArray());
+    const models = useLiveQuery(async () => {
+        const result = await db.models.toArray();
+        // Check if any models lack an 'order' field
+        if (result.length > 0 && result.some(m => m.order === undefined)) {
+            // Assign serial order if missing
+            await db.transaction('rw', db.models, async () => {
+                for (let i = 0; i < result.length; i++) {
+                    if (result[i].order === undefined) {
+                        await db.models.update(result[i].id!, { order: i });
+                    }
+                }
+            });
+            // Re-fetch sorted
+            return await db.models.orderBy('order').toArray();
+        }
+        return result.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    });
+
     const [newModel, setNewModel] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -179,7 +196,11 @@ export const SettingsPage: React.FC = () => {
 
     const handleAddModel = async () => {
         if (newModel.trim()) {
-            await db.models.add({ name: newModel.trim() });
+            const count = await db.models.count();
+            await db.models.add({
+                name: newModel.trim(),
+                order: count
+            });
             setNewModel('');
         }
     };
@@ -187,7 +208,25 @@ export const SettingsPage: React.FC = () => {
     const handleDeleteModel = async (id: number) => {
         if (confirm('Delete this model? Existing logs linked to this model will lose the reference.')) {
             await db.models.delete(id);
+            // Optionally re-shift orders here, but id/order gaps typically fine
         }
+    };
+
+    const handleMoveModel = async (index: number, direction: 'up' | 'down') => {
+        if (!models) return;
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= models.length) return;
+
+        const currentModel = models[index];
+        const targetModel = models[targetIndex];
+
+        if (currentModel.id === undefined || targetModel.id === undefined) return;
+
+        await db.transaction('rw', db.models, async () => {
+            const tempOrder = currentModel.order;
+            await db.models.update(currentModel.id!, { order: targetModel.order });
+            await db.models.update(targetModel.id!, { order: tempOrder });
+        });
     };
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,8 +257,24 @@ export const SettingsPage: React.FC = () => {
                 </div>
 
                 <ModelList>
-                    {models?.map(m => (
+                    {models?.map((m, index) => (
                         <ModelItem key={m.id}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <IconButton
+                                    onClick={() => handleMoveModel(index, 'up')}
+                                    disabled={index === 0}
+                                    style={{ padding: '2px', fontSize: '0.8rem', opacity: index === 0 ? 0.3 : 1 }}
+                                >
+                                    <FiChevronUp />
+                                </IconButton>
+                                <IconButton
+                                    onClick={() => handleMoveModel(index, 'down')}
+                                    disabled={index === models.length - 1}
+                                    style={{ padding: '2px', fontSize: '0.8rem', opacity: index === models.length - 1 ? 0.3 : 1 }}
+                                >
+                                    <FiChevronDown />
+                                </IconButton>
+                            </div>
                             <span style={{ flex: 1 }}>{m.name}</span>
                             <IconButton onClick={() => handleDeleteModel(m.id!)}><FiTrash2 /></IconButton>
                         </ModelItem>
