@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
@@ -7,6 +7,7 @@ import { FiPlus, FiMinus, FiSettings, FiSun, FiMoon, FiSearch, FiX, FiRefreshCw,
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Tooltip } from '../UI/Tooltip';
 import { SyncModal } from '../Sync/SyncModal';
+import { Toast } from '../UI/Toast';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSearch } from '../../contexts/SearchContext';
 import { format } from 'date-fns';
@@ -175,6 +176,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const { id } = useParams<{ id: string }>();
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const needRefreshRef = useRef(false);
 
   const {
     needRefresh: [needRefresh],
@@ -188,25 +191,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     },
   });
 
+  // Keep ref in sync for use in async handlers
+  useEffect(() => {
+    needRefreshRef.current = needRefresh;
+  }, [needRefresh]);
+
   const handleUpdateCheck = async () => {
     if (needRefresh) {
-      updateServiceWorker(true);
+      setToastMessage('Updating to latest version...');
+      setTimeout(() => updateServiceWorker(true), 500);
       return;
     }
+
+    if (isCheckingUpdate) return;
 
     setIsCheckingUpdate(true);
     if ('serviceWorker' in navigator) {
       try {
         const registration = await navigator.serviceWorker.ready;
         await registration.update();
-        // Give it a moment to detect changes
-        setTimeout(() => setIsCheckingUpdate(false), 1000);
+
+        // Give it 1.5s to detect and manifest the change if any
+        setTimeout(() => {
+          setIsCheckingUpdate(false);
+          if (!needRefreshRef.current) {
+            setToastMessage('You are up to date!');
+          }
+        }, 1500);
       } catch (error) {
         console.error('Error checking for updates:', error);
         setIsCheckingUpdate(false);
+        setToastMessage('Update check failed');
       }
     } else {
       setIsCheckingUpdate(false);
+      setToastMessage('PWA not supported');
     }
   };
 
@@ -373,6 +392,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       </LogList>
 
       <SyncModal isOpen={isSyncModalOpen} onClose={() => setIsSyncModalOpen(false)} />
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+      )}
     </SidebarContainer>
   );
 };
