@@ -89,7 +89,7 @@ const Button = styled.button`
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 6px;
   border: none;
   cursor: pointer;
@@ -107,7 +107,7 @@ const TopActions = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.25rem;
   margin-bottom: 0.5rem;
 `;
 
@@ -151,7 +151,7 @@ const IconButton = styled.button`
   border: none;
   color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.25rem;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -265,7 +265,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           }}>
             <FiPlus /> New
           </Button>
-          <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.125rem', alignItems: 'center' }}>
             <Tooltip content="Decrease Font Size">
               <IconButton onClick={decreaseFontSize}>
                 <FiMinus size={16} />
