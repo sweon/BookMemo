@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { SyncService, cleanRoomId, type SyncStatus } from '../../services/SyncService';
-import { FaTimes, FaSync, FaRegCopy, FaRedo, FaCamera, FaStop } from 'react-icons/fa';
+import { FaTimes, FaSync, FaRegCopy, FaRedo, FaCamera, FaStop, FaCheck } from 'react-icons/fa';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
@@ -233,7 +233,7 @@ const StatusBox = styled.div<{ $status: SyncStatus }>`
     color: ${props => {
         if (props.$status === 'error') return '#fa5252';
         if (props.$status === 'completed') return '#40c057';
-        if (props.$status === 'connected') return '#228be6';
+        if (props.$status === 'ready' || props.$status === 'connected') return '#228be6';
         if (props.$status === 'connecting') return '#fab005';
         return 'var(--text-secondary)';
     }};
@@ -241,7 +241,7 @@ const StatusBox = styled.div<{ $status: SyncStatus }>`
     border: 1px solid ${props => {
         if (props.$status === 'error') return '#fa525240';
         if (props.$status === 'completed') return '#40c05740';
-        if (props.$status === 'connected') return '#228be640';
+        if (props.$status === 'ready' || props.$status === 'connected') return '#228be640';
         if (props.$status === 'connecting') return '#fab00540';
         return 'var(--border-color)';
     }};
@@ -299,6 +299,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
     const [status, setStatus] = useState<SyncStatus>('disconnected');
     const [statusMessage, setStatusMessage] = useState('');
     const [isScanning, setIsScanning] = useState(false);
+    const [copied, setCopied] = useState(false);
     const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
     const syncService = useRef<SyncService | null>(null);
@@ -382,11 +383,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
         return syncService.current;
     };
 
-    const startHosting = async () => {
-        if (!roomId.trim()) return;
+    const startHosting = async (id?: string) => {
+        const hostId = id || roomId;
+        if (!hostId.trim()) return;
         try {
             const svc = getService();
-            await svc.initialize(roomId);
+            await svc.initialize(hostId);
         } catch (e) {
             console.error(e);
         }
@@ -412,19 +414,35 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(roomId);
-        // Could show toast
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const regenerateId = () => {
-        if (status !== 'disconnected' && status !== 'error' && status !== 'completed') return;
-        setRoomId(generateShortId());
+        if (status === 'syncing' || status === 'connected') return;
+
+        // Stop current peer before regenerating
+        if (syncService.current) {
+            syncService.current.destroy();
+            syncService.current = null;
+        }
+
+        const newId = generateShortId();
+        setRoomId(newId);
+        setStatus('disconnected');
+        setStatusMessage('');
+
+        // Re-start hosting with new ID if in host tab
+        if (activeTab === 'host') {
+            startHosting(newId);
+        }
     };
 
     if (!isOpen) return null;
 
     return (
         <Overlay onClick={handleClose}>
-            <ModalContainer onClick={e => e.stopPropagation()}>
+            <ModalContainer onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                 <Header>
                     <h2><FaSync /> Sync Data</h2>
                     <CloseButton onClick={handleClose}><FaTimes /></CloseButton>
@@ -435,7 +453,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                         $active={activeTab === 'host'}
                         $type="host"
                         onClick={() => setActiveTab('host')}
-                        disabled={status === 'connected' || status === 'syncing'}
+                        disabled={status === 'syncing' || (status === 'connected' && activeTab === 'join')}
                     >
                         Host Session
                     </Tab>
@@ -443,7 +461,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                         $active={activeTab === 'join'}
                         $type="join"
                         onClick={() => setActiveTab('join')}
-                        disabled={status === 'connected' || status === 'syncing'}
+                        disabled={status === 'syncing' || (status === 'connected' && activeTab === 'host')}
                     >
                         Join Session
                     </Tab>
@@ -456,25 +474,27 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                             <InputGroup>
                                 <Input
                                     value={roomId}
-                                    onChange={e => setRoomId(e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoomId(e.target.value)}
                                     disabled={status === 'connected' || status === 'connecting' || status === 'syncing'}
                                     placeholder="Enter your custom ID"
                                 />
-                                <IconButton onClick={copyToClipboard} title="Copy ID">
-                                    <FaRegCopy />
+                                <IconButton onClick={copyToClipboard} title={copied ? "Copied!" : "Copy ID"}>
+                                    {copied ? <FaCheck style={{ color: '#40c057' }} /> : <FaRegCopy />}
                                 </IconButton>
-                                <IconButton onClick={regenerateId} disabled={status === 'syncing'} title="Regenerate ID">
+                                <IconButton onClick={regenerateId} disabled={status === 'syncing' || status === 'connected'} title="Regenerate ID">
                                     <FaRedo />
                                 </IconButton>
                             </InputGroup>
 
-                            {(status === 'connected' || status === 'connecting' || status === 'syncing') && (
+                            {(status === 'ready' || status === 'connected' || status === 'connecting' || status === 'syncing') && (
                                 <div style={{ textAlign: 'center' }}>
                                     <QRContainer>
                                         <QRCodeSVG value={cleanRoomId(roomId)} size={200} level="H" />
                                     </QRContainer>
                                     <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '-10px' }}>
-                                        Scan this code on the other device to sync
+                                        {status === 'connected' || status === 'syncing'
+                                            ? 'Connected to peer'
+                                            : 'Scan this code on the other device to sync'}
                                     </p>
                                 </div>
                             )}
@@ -483,7 +503,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                                 <Button
                                     $fullWidth
                                     $variant="host"
-                                    onClick={startHosting}
+                                    onClick={() => startHosting()}
                                     style={{ marginBottom: '20px' }}
                                 >
                                     Start Hosting
@@ -513,7 +533,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                                         <Input
                                             placeholder="Paste Room ID or scan QR"
                                             value={targetRoomId}
-                                            onChange={e => setTargetRoomId(e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetRoomId(e.target.value)}
                                             disabled={status === 'connected'}
                                         />
                                         <IconButton onClick={startScanning} disabled={status === 'connected'} title="Scan QR Code">

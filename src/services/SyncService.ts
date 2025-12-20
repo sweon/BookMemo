@@ -1,7 +1,7 @@
 import Peer, { type DataConnection } from 'peerjs';
 import { getBackupData, mergeBackupData } from '../utils/backup';
 
-export type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'syncing' | 'completed' | 'error';
+export type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'syncing' | 'completed' | 'error' | 'ready';
 
 export interface SyncServiceOptions {
     onStatusChange: (status: SyncStatus, message?: string) => void;
@@ -35,7 +35,7 @@ export class SyncService {
             this.peer = new Peer(cleanId);
 
             this.peer.on('open', (id) => {
-                this.options.onStatusChange('connected', `Host ID: ${id}`);
+                this.options.onStatusChange('ready', `Host ID: ${id}`);
                 resolve(id);
             });
 
