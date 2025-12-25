@@ -45,10 +45,22 @@ export class SyncService {
         return new Promise((resolve, reject) => {
             console.log(cleanId ? `Registering peer with ID: ${requestedId}` : 'Registering peer with random ID');
 
-            // Using default PeerJS configuration for best automatic NAT/Local traversal
+            // Using explicit STUN servers and pool size to maximize local network P2P chances
             const peerConfig = {
                 debug: 3,
-                secure: true
+                secure: true,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'stun:stun3.l.google.com:19302' },
+                        { urls: 'stun:stun4.l.google.com:19302' },
+                        { urls: 'stun:stun.services.mozilla.com' },
+                        { urls: 'stun:global.stun.twilio.com:3478' }
+                    ],
+                    iceCandidatePoolSize: 10
+                }
             };
 
             this.peer = cleanId ? new Peer(cleanId, peerConfig) : new Peer(peerConfig);
@@ -138,10 +150,11 @@ export class SyncService {
             return;
         }
 
-        console.log(`Connecting to ${targetPeerId} using JSON serialization...`);
-        // Using 'json' for better compatibility with local network state inspections
+        console.log(`Connecting to ${targetPeerId} using binary serialization...`);
+        // Using 'binary' and 'reliable: true' for stable data transfer on local networks
         const conn = this.peer.connect(targetPeerId, {
-            serialization: 'json'
+            serialization: 'binary',
+            reliable: true
         });
 
         // Debug ICE states
