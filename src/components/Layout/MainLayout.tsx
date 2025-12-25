@@ -92,14 +92,15 @@ const Overlay = styled.div<{ $isOpen: boolean }>`
 
 const STORAGE_KEY = 'llmemo-sidebar-width';
 const DEFAULT_WIDTH = 300;
-const MIN_WIDTH = 200;
+const MIN_WIDTH = 280; // Set to prevent header content from wrapping
 const MAX_WIDTH = 600;
 
 export const MainLayout: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+    const parsed = saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+    return Math.max(MIN_WIDTH, parsed);
   });
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
