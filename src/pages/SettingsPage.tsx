@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { exportData, importData } from '../utils/backup';
-import { FiTrash2, FiPlus, FiDownload, FiUpload } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiDownload, FiUpload, FiHelpCircle } from 'react-icons/fi';
 import { MdDragIndicator } from 'react-icons/md';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
@@ -229,6 +229,7 @@ export const SettingsPage: React.FC = () => {
     const [exportMode, setExportMode] = useState<'all' | 'selected'>('all');
     const [selectedLogs, setSelectedLogs] = useState<Set<number>>(new Set());
     const [exportFileName, setExportFileName] = useState('');
+    const [showHelpModal, setShowHelpModal] = useState(false);
     const allLogs = useLiveQuery(() => db.logs.orderBy('createdAt').reverse().toArray());
 
     const handleExportClick = () => {
@@ -384,13 +385,18 @@ export const SettingsPage: React.FC = () => {
 
             <Section>
                 <Title>{t.settings.language}</Title>
-                <Select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value as Language)}
-                >
-                    <option value="en">{t.settings.english}</option>
-                    <option value="ko">{t.settings.korean}</option>
-                </Select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <Select
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value as Language)}
+                    >
+                        <option value="en">{t.settings.english}</option>
+                        <option value="ko">{t.settings.korean}</option>
+                    </Select>
+                    <Button onClick={() => setShowHelpModal(true)} style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-color)' }}>
+                        <FiHelpCircle /> {t.settings.help}
+                    </Button>
+                </div>
             </Section>
 
             {showExportModal && (
@@ -453,6 +459,28 @@ export const SettingsPage: React.FC = () => {
                             </Button>
                             <Button onClick={confirmExport} disabled={exportMode === 'selected' && selectedLogs.size === 0}>
                                 <FiDownload /> {t.settings.export}
+                            </Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </ModalOverlay>
+            )}
+            {showHelpModal && (
+                <ModalOverlay onClick={() => setShowHelpModal(false)}>
+                    <ModalContent onClick={e => e.stopPropagation()}>
+                        <ModalHeader>{t.settings.help_title}</ModalHeader>
+                        <ModalBody>
+                            <p style={{ marginBottom: '1.5rem', lineHeight: '1.5' }}>{t.settings.help_desc}</p>
+                            <ul style={{ paddingLeft: '1.2rem', lineHeight: '1.8' }}>
+                                <li>{t.settings.help_local_db}</li>
+                                <li>{t.settings.help_offline}</li>
+                                <li>{t.settings.help_sync}</li>
+                                <li>{t.settings.help_backup}</li>
+                                <li>{t.settings.help_markdown}</li>
+                            </ul>
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button onClick={() => setShowHelpModal(false)}>
+                                {t.settings.help_close}
                             </Button>
                         </ModalFooter>
                     </ModalContent>

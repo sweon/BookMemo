@@ -43,7 +43,16 @@ export const translations = {
             export: "Export",
             import_confirm: "Import data? This will merge with existing data.",
             import_success: "Import successful!",
-            import_failed: "Import failed: "
+            import_failed: "Import failed: ",
+            help: "Help",
+            help_title: "Help & About",
+            help_desc: "LLMemo is a local-first management tool for your LLM interactions.",
+            help_local_db: "Local Database: All data is stored in your browser using IndexedDB. No server required.",
+            help_offline: "Offline Access: Works offline as a PWA.",
+            help_sync: "Synchronization: Sync data between devices using WebRTC.",
+            help_backup: "Import/Export: Backup your logs as JSON files anytime.",
+            help_markdown: "Markdown Support: Rich logging with full Markdown support.",
+            help_close: "Close"
         },
         log_detail: {
             loading: "Loading...",
@@ -144,7 +153,16 @@ export const translations = {
             export: "내보내기",
             import_confirm: "데이터를 가져오시겠습니까? 기존 데이터와 병합됩니다.",
             import_success: "가져오기 성공!",
-            import_failed: "가져오기 실패: "
+            import_failed: "가져오기 실패: ",
+            help: "도움말",
+            help_title: "도움말 및 정보",
+            help_desc: "LLMemo는 LLM과의 대화 내역을 로컬 우선으로 관리하는 도구입니다.",
+            help_local_db: "로컬 데이터베이스: 모든 데이터는 IndexedDB를 통해 브라우저에 저장됩니다. 서버가 필요 없습니다.",
+            help_offline: "오프라인 지원: PWA 기술을 통해 오프라인에서도 작동합니다.",
+            help_sync: "동기화: WebRTC를 통해 기기 간 데이터를 동기화할 수 있습니다.",
+            help_backup: "가져오기/내보내기: 언제든지 로그를 JSON 파일로 백업할 수 있습니다.",
+            help_markdown: "마크다운 지원: 마크다운을 통한 풍성한 로그 작성을 지원합니다.",
+            help_close: "닫기"
         },
         log_detail: {
             loading: "로딩 중...",
