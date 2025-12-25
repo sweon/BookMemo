@@ -26,26 +26,28 @@ export class SyncService {
         this.handleConnection = this.handleConnection.bind(this);
     }
 
-    public async initialize(roomId: string): Promise<string> {
-        this.destroy();
+    private async getOrCreatePeer(requestedId?: string): Promise<Peer> {
+        const cleanId = requestedId ? cleanRoomId(requestedId) : undefined;
+
+        // If we already have a peer that matches our needs, reuse it
+        if (this.peer && !this.peer.destroyed && this.peer.open) {
+            if (!cleanId || this.peer.id === cleanId) {
+                console.log('Reusing existing peer:', this.peer.id);
+                return this.peer;
+            }
+            console.log('Peer ID mismatch or new ID requested, destroying old peer...');
+            this.destroy();
+        }
+
         // Give a small moment for previous peer to fully disconnect from signaling server
         await new Promise(r => setTimeout(r, 300));
 
-        this.isHost = true;
-        this.isInitiator = false;
-
-        this.options.onStatusChange('connecting', 'Registering with server...');
-
         return new Promise((resolve, reject) => {
-            const cleanId = cleanRoomId(roomId);
+            console.log(cleanId ? `Registering peer with ID: ${cleanId}` : 'Registering peer with random ID');
 
-            // Explicit configuration with STUN servers for better NAT traversal
-            this.peer = new Peer(cleanId, {
-                host: '0.peerjs.com',
-                port: 443,
-                path: '/',
+            const peerConfig = {
+                debug: 3,
                 secure: true,
-                debug: 2,
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
@@ -54,83 +56,88 @@ export class SyncService {
                         { urls: 'stun:global.stun.twilio.com:3478' }
                     ]
                 }
-            });
+            };
+
+            this.peer = cleanId ? new Peer(cleanId, peerConfig) : new Peer(peerConfig);
 
             const timeout = setTimeout(() => {
                 if (this.peer && !this.peer.open) {
-                    this.options.onStatusChange('error', 'Registration timeout. Please retry.');
-                    reject(new Error('Timeout'));
+                    this.options.onStatusChange('error', 'Signaling server timeout. Please refresh.');
+                    this.destroy();
+                    reject(new Error('Signaling Timeout'));
                 }
             }, 10000);
 
             this.peer.on('open', (id) => {
                 clearTimeout(timeout);
-                this.options.onStatusChange('ready', `Room ID: ${id}`);
-                resolve(id);
+                console.log('Peer successfully opened with ID:', id);
+                resolve(this.peer!);
             });
 
             this.peer.on('connection', (conn) => {
+                console.log('Incoming connection from:', conn.peer);
                 this.handleConnection(conn);
             });
 
             this.peer.on('error', (err: any) => {
                 clearTimeout(timeout);
-                console.error('Peer Server Error:', err.type);
-                this.options.onStatusChange('error', `Server Error: ${err.type}`);
+                console.error('Peer Error State:', err.type, err);
+
+                if (err.type === 'unavailable-id') {
+                    this.options.onStatusChange('error', 'Room ID already taken. Try another.');
+                } else if (err.type === 'peer-unavailable') {
+                    this.options.onStatusChange('error', 'Target device not found. Check the ID.');
+                } else {
+                    this.options.onStatusChange('error', `Connection error: ${err.type}`);
+                }
+
+                this.destroy();
                 reject(err);
+            });
+
+            this.peer.on('disconnected', () => {
+                console.log('Peer disconnected from signaling server, attempting reconnect...');
+                this.peer?.reconnect();
             });
         });
     }
 
-    public async connect(targetPeerId: string) {
-        this.destroy();
-        await new Promise(r => setTimeout(r, 300));
+    public async initialize(roomId: string): Promise<string> {
+        this.isHost = true;
+        this.isInitiator = false;
+        this.options.onStatusChange('connecting', 'Preparing host...');
 
+        try {
+            const peer = await this.getOrCreatePeer(roomId);
+            this.options.onStatusChange('ready', `Room ID: ${peer.id}`);
+            return peer.id;
+        } catch (e) {
+            console.error('Failed to initialize host:', e);
+            throw e;
+        }
+    }
+
+    public async connect(targetPeerId: string) {
         this.isHost = false;
         this.isInitiator = true;
+        this.options.onStatusChange('connecting', 'Establishing identity...');
 
-        this.options.onStatusChange('connecting', 'Initializing link...');
-
-        this.peer = new Peer({
-            host: '0.peerjs.com',
-            port: 443,
-            path: '/',
-            secure: true,
-            debug: 2,
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' }
-                ]
-            }
-        });
-
-        const timeout = setTimeout(() => {
-            if (this.peer && !this.peer.open) {
-                this.options.onStatusChange('error', 'Link initialization timed out.');
-            }
-        }, 10000);
-
-        this.peer.on('open', (id) => {
-            clearTimeout(timeout);
-            console.log('Client registered:', id);
+        try {
+            await this.getOrCreatePeer();
             this.options.onStatusChange('connecting', `Dialing ${targetPeerId}...`);
             this._connect(cleanRoomId(targetPeerId));
-        });
-
-        this.peer.on('error', (err: any) => {
-            clearTimeout(timeout);
-            console.error('Peer Client Error:', err.type);
-            this.options.onStatusChange('error', `Connection Error: ${err.type}`);
-        });
+        } catch (e) {
+            console.error('Failed to initialize client:', e);
+        }
     }
 
     private _connect(targetPeerId: string) {
-        if (!this.peer || this.peer.destroyed) return;
+        if (!this.peer || this.peer.destroyed || !this.peer.open) {
+            this.options.onStatusChange('error', 'Link lost. Reconnecting...');
+            return;
+        }
 
-        // Using 'binary' serialization which is the default and most robust for PeerJS
+        console.log(`Connecting to ${targetPeerId} using binary serialization...`);
         const conn = this.peer.connect(targetPeerId, {
             serialization: 'binary'
         });
