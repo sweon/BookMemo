@@ -248,6 +248,14 @@ const StatusBox = styled.div<{ $status: SyncStatus }>`
         if (props.$status === 'connecting') return '#f59e0b40';
         return props.theme.colors.border;
     }};
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+`;
+
+const FormSection = styled.div`
+    max-width: 320px;
+    margin: 0 auto;
 `;
 
 const QRWrapper = styled.div`
@@ -476,7 +484,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
 
                 <Content>
                     {activeTab === 'host' ? (
-                        <>
+                        <FormSection>
                             <Label>{t.sync.your_room_id}</Label>
                             <InputGroup>
                                 <Input
@@ -509,11 +517,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                                     ? t.sync.connected_to_peer
                                     : t.sync.scan_hint}
                             </p>
-                        </>
+                        </FormSection>
                     ) : (
                         <>
                             {isScanning ? (
-                                <>
+                                <FormSection>
                                     <ScannerContainer>
                                         <div id="reader"></div>
                                     </ScannerContainer>
@@ -524,9 +532,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                                     >
                                         <FaStop /> {t.sync.stop_scanning}
                                     </ActionButton>
-                                </>
+                                </FormSection>
                             ) : (
-                                <>
+                                <FormSection>
                                     <ActionButton
                                         $fullWidth
                                         onClick={() => setIsScanning(true)}
@@ -554,7 +562,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                                             {status === 'connected' ? <FaCheck style={{ color: theme.colors.success }} /> : <FaLink />}
                                         </IconButton>
                                     </InputGroup>
-                                </>
+                                </FormSection>
                             )}
                         </>
                     )}
