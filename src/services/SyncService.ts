@@ -39,27 +39,16 @@ export class SyncService {
             this.destroy();
         }
 
-        // Give a small moment for previous peer to fully disconnect from signaling server
+        // Give a small moment for cleanup
         await new Promise(r => setTimeout(r, 300));
 
         return new Promise((resolve, reject) => {
-            console.log(cleanId ? `Registering peer with ID: ${cleanId}` : 'Registering peer with random ID');
+            console.log(cleanId ? `Registering peer with ID: ${requestedId}` : 'Registering peer with random ID');
 
+            // Using default PeerJS configuration for best automatic NAT/Local traversal
             const peerConfig = {
                 debug: 3,
-                secure: true,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'stun:stun3.l.google.com:19302' },
-                        { urls: 'stun:stun4.l.google.com:19302' },
-                        { urls: 'stun:stun.services.mozilla.com' },
-                        { urls: 'stun:global.stun.twilio.com:3478' }
-                    ],
-                    iceCandidatePoolSize: 10
-                }
+                secure: true
             };
 
             this.peer = cleanId ? new Peer(cleanId, peerConfig) : new Peer(peerConfig);
@@ -91,6 +80,8 @@ export class SyncService {
                     this.options.onStatusChange('error', 'Room ID already taken. Try another.');
                 } else if (err.type === 'peer-unavailable') {
                     this.options.onStatusChange('error', 'Target device not found. Check the ID.');
+                } else if (err.type === 'network') {
+                    this.options.onStatusChange('error', 'Network error. Check your connection.');
                 } else {
                     this.options.onStatusChange('error', `Connection error: ${err.type}`);
                 }
@@ -128,6 +119,12 @@ export class SyncService {
 
         try {
             await this.getOrCreatePeer();
+            this.options.onStatusChange('connecting', 'Warming up link...');
+
+            // CRITICAL for same-WiFi: Wait for ICE candidates (local IPs) to be gathered
+            // before attempting to dial, otherwise signaling might miss the local candidate.
+            await new Promise(r => setTimeout(r, 2000));
+
             this.options.onStatusChange('connecting', `Dialing ${targetPeerId}...`);
             this._connect(cleanRoomId(targetPeerId));
         } catch (e) {
@@ -141,10 +138,23 @@ export class SyncService {
             return;
         }
 
-        console.log(`Connecting to ${targetPeerId} using binary serialization...`);
+        console.log(`Connecting to ${targetPeerId} using JSON serialization...`);
+        // Using 'json' for better compatibility with local network state inspections
         const conn = this.peer.connect(targetPeerId, {
-            serialization: 'binary'
+            serialization: 'json'
         });
+
+        // Debug ICE states
+        const pc = (conn as any).peerConnection;
+        if (pc) {
+            pc.oniceconnectionstatechange = () => {
+                console.log('ICE State:', pc.iceConnectionState);
+            };
+            pc.onconnectionstatechange = () => {
+                console.log('Connection State:', pc.connectionState);
+            };
+        }
+
         this.handleConnection(conn);
     }
 
