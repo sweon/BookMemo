@@ -239,14 +239,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     }
   };
 
-  const models = useLiveQuery(() => db.models.orderBy('order').toArray());
+  // Fetch raw data reactively
+  const allLogs = useLiveQuery(() => db.logs.toArray());
+  const allModels = useLiveQuery(() => db.models.toArray());
 
-  const logs = useLiveQuery(async () => {
-    const [allLogs, allModels] = await Promise.all([
-      db.logs.toArray(),
-      db.models.toArray()
-    ]);
-    let result = allLogs;
+  // Filter and sort synchronously for instant UI updates
+  const logs = React.useMemo(() => {
+    if (!allLogs || !allModels) return [];
+
+    let result = [...allLogs];
 
     // Filter
     if (searchQuery) {
@@ -262,7 +263,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         }
       } else {
         const lowerSearch = searchQuery.toLowerCase();
-        result = result.filter(l => l.title.toLowerCase().includes(lowerSearch) || l.tags.some(t => t.toLowerCase().includes(lowerSearch)));
+        result = result.filter(l =>
+          l.title.toLowerCase().includes(lowerSearch) ||
+          l.tags.some(t => t.toLowerCase().includes(lowerSearch))
+        );
       }
     }
 
@@ -282,8 +286,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       }
       return 0;
     });
-
-  }, [searchQuery, sortBy]);
+  }, [allLogs, allModels, searchQuery, sortBy]);
 
   return (
     <SidebarContainer>
@@ -392,9 +395,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             <LogTitle title={log.title || t.sidebar.untitled}>{log.title || t.sidebar.untitled}</LogTitle>
             <LogDate>
               {format(log.createdAt, 'yy.MM.dd HH:mm')}
-              {log.modelId && models && (
+              {log.modelId && allModels && (
                 <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>
-                  • {models.find(m => m.id === log.modelId)?.name}
+                  • {allModels.find(m => m.id === log.modelId)?.name}
                 </span>
               )}
             </LogDate>
