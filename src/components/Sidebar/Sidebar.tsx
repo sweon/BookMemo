@@ -172,7 +172,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const { searchQuery, setSearchQuery } = useSearch();
   const { t } = useLanguage();
-  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'model'>('date-desc');
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'model-desc' | 'model-asc'>('date-desc');
   const { mode, toggleTheme, increaseFontSize, decreaseFontSize } = useTheme();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -279,10 +279,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         return b.createdAt.getTime() - a.createdAt.getTime();
       } else if (sortBy === 'date-asc') {
         return a.createdAt.getTime() - b.createdAt.getTime();
-      } else if (sortBy === 'model') {
+      } else if (sortBy === 'model-desc' || sortBy === 'model-asc') {
         const nameA = (a.modelId && modelMap.get(a.modelId)) || 'zzzz';
         const nameB = (b.modelId && modelMap.get(b.modelId)) || 'zzzz';
-        return nameA.localeCompare(nameB);
+        const modelCompare = nameA.localeCompare(nameB);
+        if (modelCompare !== 0) return modelCompare;
+
+        // Secondary sort by date
+        if (sortBy === 'model-desc') {
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        } else {
+          return a.createdAt.getTime() - b.createdAt.getTime();
+        }
       }
       return 0;
     });
@@ -379,7 +387,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           >
             <option value="date-desc">{t.sidebar.newest}</option>
             <option value="date-asc">{t.sidebar.oldest}</option>
-            <option value="model">{t.sidebar.model_name}</option>
+            <option value="model-desc">{t.sidebar.model_newest}</option>
+            <option value="model-asc">{t.sidebar.model_oldest}</option>
           </select>
         </div>
       </Header>
