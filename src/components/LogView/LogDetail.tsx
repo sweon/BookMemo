@@ -17,9 +17,7 @@ const Container = styled.div`
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
-  padding: 2rem;
-  max-width: 900px;
-  margin: 0 auto;
+  padding: 24px 32px;
   width: 100%;
 `;
 

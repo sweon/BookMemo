@@ -11,14 +11,14 @@ import { useLanguage } from '../contexts/LanguageContext';
 import type { Language } from '../translations';
 
 const Container = styled.div`
-  padding: 2rem;
-  max-width: 800px;
+  padding: 24px 32px;
   margin: 0;
   height: 100%;
   overflow-y: auto;
+  width: 100%;
   
   @media (max-width: 600px) {
-    padding: 1rem;
+    padding: 16px;
   }
 `;
 
