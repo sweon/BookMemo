@@ -274,23 +274,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     const modelMap = new Map<number, string>();
     allModels.forEach(m => modelMap.set(m.id!, m.name));
 
+    const modelActivity = new Map<number | string, number>();
+    allLogs.forEach(log => {
+      const modelId = log.modelId || 'none';
+      const time = new Date(log.createdAt).getTime();
+      const current = modelActivity.get(modelId) || (sortBy === 'model-desc' ? 0 : Infinity);
+
+      if (sortBy === 'model-desc') {
+        if (time > current) modelActivity.set(modelId, time);
+      } else {
+        if (time < current) modelActivity.set(modelId, time);
+      }
+    });
+
     return result.sort((a, b) => {
       if (sortBy === 'date-desc') {
-        return b.createdAt.getTime() - a.createdAt.getTime();
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       } else if (sortBy === 'date-asc') {
-        return a.createdAt.getTime() - b.createdAt.getTime();
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       } else if (sortBy === 'model-desc' || sortBy === 'model-asc') {
-        const nameA = (a.modelId && modelMap.get(a.modelId)) || 'zzzz';
-        const nameB = (b.modelId && modelMap.get(b.modelId)) || 'zzzz';
-        const modelCompare = nameA.localeCompare(nameB);
-        if (modelCompare !== 0) return modelCompare;
+        const modelA = a.modelId || 'none';
+        const modelB = b.modelId || 'none';
 
-        // Secondary sort by date
-        if (sortBy === 'model-desc') {
-          return b.createdAt.getTime() - a.createdAt.getTime();
-        } else {
-          return a.createdAt.getTime() - b.createdAt.getTime();
+        // Primary sort: Group by model's activity date
+        const activityA = modelActivity.get(modelA) || 0;
+        const activityB = modelActivity.get(modelB) || 0;
+
+        if (activityA !== activityB) {
+          return sortBy === 'model-desc' ? activityB - activityA : activityA - activityB;
         }
+
+        // Secondary sort: If activity date same (same model), sort by date
+        const timeA = new Date(a.createdAt).getTime();
+        const timeB = new Date(b.createdAt).getTime();
+        return sortBy === 'model-desc' ? timeB - timeA : timeA - timeB;
       }
       return 0;
     });
