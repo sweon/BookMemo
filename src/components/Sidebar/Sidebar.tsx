@@ -391,7 +391,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           >
             <LogTitle title={log.title || t.sidebar.untitled}>{log.title || t.sidebar.untitled}</LogTitle>
             <LogDate>
-              {format(log.createdAt, 'MMM d, yyyy HH:mm')}
+              {format(log.createdAt, 'yy.MM.dd HH:mm')}
               {log.modelId && models && (
                 <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>
                   • {models.find(m => m.id === log.modelId)?.name}
