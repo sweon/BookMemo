@@ -443,14 +443,21 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
         const targetId = id || targetRoomId;
         if (!targetId.trim() || status === 'connecting' || status === 'connected' || status === 'syncing') return;
 
+        if (isScanning) {
+            setIsScanning(false);
+            if (scannerRef.current) {
+                scannerRef.current.clear().catch(console.error);
+                scannerRef.current = null;
+            }
+        }
+
         try {
             const svc = getService();
             await svc.connect(targetId);
-            if (isScanning) {
-                setIsScanning(false);
-            }
-        } catch (e) {
+        } catch (e: any) {
             console.error('Connect error:', e);
+            setStatus('error');
+            setStatusMessage(`Connection failed: ${e.message || 'Unknown error'}`);
         }
     };
 

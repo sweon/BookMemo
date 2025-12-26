@@ -58,9 +58,17 @@ export class SyncService {
 
         return new Promise<void>((resolve, reject) => {
             const url = `${WS_BASE}/${this.roomId}/ws`;
+            const timeout = setTimeout(() => {
+                if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
+                    this.ws.close();
+                    reject(new Error('Relay connection timeout'));
+                }
+            }, 10000);
+
             this.ws = new WebSocket(url);
 
             this.ws.onopen = () => {
+                clearTimeout(timeout);
                 console.log('Relay connected');
                 resolve();
             };
@@ -68,25 +76,25 @@ export class SyncService {
             this.ws.onmessage = async (event) => {
                 try {
                     const msg = JSON.parse(event.data);
-                    // ntfy.sh sends various message types, we care about 'message'
                     if (msg.event === 'message') {
                         if (msg.id === this.lastMessageId) return;
                         this.lastMessageId = msg.id;
 
-                        await this.handleRelayMessage(msg.message);
+                        await this.handleRelayMessage(msg);
                     }
                 } catch (e) {
-                    // Not our JSON message, ignore
                 }
             };
 
             this.ws.onerror = (err) => {
+                clearTimeout(timeout);
                 console.error('Relay error:', err);
                 this.options.onStatusChange('error', 'Relay connection failed');
                 reject(err);
             };
 
             this.ws.onclose = () => {
+                clearTimeout(timeout);
                 console.log('Relay disconnected');
                 if (this.roomId) {
                     this.options.onStatusChange('disconnected', 'Relay disconnected');
