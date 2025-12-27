@@ -242,6 +242,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, logId, 
     const handleStatusChange = (newStatus: SyncStatus, msg?: string) => {
         setStatus(newStatus);
         if (msg) setStatusMessage(msg);
+
+        if (newStatus === 'completed') {
+            setTimeout(() => {
+                handleClose();
+            }, 1000);
+        }
     };
 
     const getService = () => {

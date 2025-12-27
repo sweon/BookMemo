@@ -174,7 +174,11 @@ export class SyncService {
                 });
             }
             console.log('Data sent to relay');
-            this.options.onStatusChange('connected', 'Data sent!');
+            if (this.options.initialDataLogId) {
+                this.options.onStatusChange('completed', 'Data sent successfully!');
+            } else {
+                this.options.onStatusChange('connected', 'Data sent!');
+            }
         } catch (err: any) {
             console.error('Sync failed:', err);
             this.options.onStatusChange('error', `Sync failed: ${err.message}`);
