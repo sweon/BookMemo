@@ -241,22 +241,28 @@ export class SyncService {
         }
     }
 
+
     private async downloadAndProcessAttachment(url: string) {
         try {
+            console.log('Downloading attachment from:', url);
             const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to download attachment: ${response.status} ${response.statusText}`);
+            }
             const encodedData = await response.text();
+            console.log('Attachment downloaded, size:', encodedData.length);
             await this.processReceivedEncodedData(encodedData);
         } catch (e: any) {
             console.error('Download error:', e);
-            this.options.onStatusChange('error', `Download failed: ${e.message}`);
+            this.options.onStatusChange('error', `Download failed: ${e.message || e}`);
         }
     }
 
     private async processReceivedEncodedData(encodedData: string) {
-        try {
-            let isPartial = false;
-            let realEncodedData = encodedData;
+        let realEncodedData = encodedData;
+        let isPartial = false;
 
+        try {
             if (encodedData.startsWith("PARTIAL:")) {
                 isPartial = true;
                 realEncodedData = encodedData.substring(8);
@@ -264,10 +270,31 @@ export class SyncService {
                 isPartial = false;
                 realEncodedData = encodedData.substring(5);
             }
+        } catch (e: any) {
+            this.options.onStatusChange('error', `Pre-processing failed: ${e.message}`);
+            return;
+        }
 
-            const decrypted = await decryptData(realEncodedData, this.roomId!);
-            const data = JSON.parse(decrypted);
+        let decrypted = '';
+        try {
+            this.options.onStatusChange('syncing', 'Decrypting data...');
+            decrypted = await decryptData(realEncodedData, this.roomId!);
+        } catch (e: any) {
+            console.error('Decryption error:', e);
+            this.options.onStatusChange('error', `Decryption failed: ${e.message || 'Unknown error'}`);
+            return;
+        }
 
+        let data: any;
+        try {
+            data = JSON.parse(decrypted);
+        } catch (e: any) {
+            console.error('JSON Parse error:', e);
+            this.options.onStatusChange('error', `JSON Parse failed: ${e.message}`);
+            return;
+        }
+
+        try {
             // If we are in single-log sharing mode (Sender), we usually don't want to merge the Receiver's full backup.
             if (this.options.initialDataLogId && this.isHost) {
                 console.log("In single log share mode, skipping merge of incoming data.");
@@ -293,8 +320,8 @@ export class SyncService {
                 this.options.onDataReceived();
             }
         } catch (e: any) {
-            console.error('Process error:', e);
-            this.options.onStatusChange('error', `Decrypt/Merge failed: ${e.message}`);
+            console.error('Merge error:', e);
+            this.options.onStatusChange('error', `Merge failed: ${e.message || e}`);
         }
     }
 
