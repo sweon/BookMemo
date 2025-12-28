@@ -179,15 +179,16 @@ export class SyncService {
 
             this.options.onStatusChange('syncing', 'Encrypting...');
             const encrypted = await encryptData(jsonStr, this.roomId);
+            const finalData = (targetLogIds ? "PARTIAL:" : "FULL:") + encrypted;
 
-            if (encrypted.length > 2000) {
+            if (finalData.length > 2000) {
                 this.options.onStatusChange('syncing', 'Uploading attachment...');
-                await this.sendRelayAttachment(encrypted);
+                await this.sendRelayAttachment(finalData);
             } else {
                 this.options.onStatusChange('syncing', 'Sending message...');
                 await this.sendRelayMessage({
                     type: 'sync_data',
-                    data: encrypted
+                    data: finalData
                 });
             }
             console.log('Data sent to relay');
@@ -253,7 +254,18 @@ export class SyncService {
 
     private async processReceivedEncodedData(encodedData: string) {
         try {
-            const decrypted = await decryptData(encodedData, this.roomId!);
+            let isPartial = false;
+            let realEncodedData = encodedData;
+
+            if (encodedData.startsWith("PARTIAL:")) {
+                isPartial = true;
+                realEncodedData = encodedData.substring(8);
+            } else if (encodedData.startsWith("FULL:")) {
+                isPartial = false;
+                realEncodedData = encodedData.substring(5);
+            }
+
+            const decrypted = await decryptData(realEncodedData, this.roomId!);
             const data = JSON.parse(decrypted);
 
             // If we are in single-log sharing mode (Sender), we usually don't want to merge the Receiver's full backup.
@@ -272,8 +284,10 @@ export class SyncService {
                 this.options.onDataReceived();
             } else {
                 // Client received data
-                this.options.onStatusChange('syncing', 'Synchronizing back...');
-                await this.syncData();
+                if (!isPartial) {
+                    this.options.onStatusChange('syncing', 'Synchronizing back...');
+                    await this.syncData();
+                }
 
                 this.options.onStatusChange('completed', 'Sync Completed!');
                 this.options.onDataReceived();
