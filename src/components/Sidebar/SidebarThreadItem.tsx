@@ -1,8 +1,7 @@
 import React from 'react';
-import { Draggable, Droppable } from '@hello-pangea/dnd';
+import { Draggable } from '@hello-pangea/dnd';
 import type { Log } from '../../db';
-import { SidebarLogItem } from './SidebarLogItem';
-import { LogItemLink, LogTitle, LogDate, ThreadContainer, ThreadToggleBtn } from './itemStyles';
+import { LogItemLink, LogTitle, LogDate, ThreadToggleBtn } from './itemStyles';
 import { FiCornerDownRight } from 'react-icons/fi';
 
 interface Props {
@@ -28,7 +27,7 @@ export const SidebarThreadItem: React.FC<Props> = ({
     const bodyLogs = logs.slice(1);
 
     return (
-        <Draggable draggableId={`thread-group-${threadId}`} index={index}>
+        <Draggable draggableId={`thread-header-${headLog.id}`} index={index}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}
@@ -44,11 +43,11 @@ export const SidebarThreadItem: React.FC<Props> = ({
                     }}
                 >
                     {/* Head Log - Acts as drag handle for the group */}
-                    <div {...provided.dragHandleProps}>
+                    <div {...provided.dragHandleProps} style={{ position: 'relative' }}>
                         <LogItemLink
                             to={`/log/${headLog.id}`}
                             $isActive={activeLogId === headLog.id}
-                            $inThread={false} // Shown as normal log
+                            $inThread={false}
                             onClick={onLogClick}
                         >
                             <LogTitle title={headLog.title || untitledText}>
@@ -63,49 +62,17 @@ export const SidebarThreadItem: React.FC<Props> = ({
                                 )}
                             </LogDate>
                         </LogItemLink>
+
+                        {/* Integrated Toggle Button */}
+                        {bodyLogs.length > 0 && (
+                            <div style={{ paddingLeft: '0.5rem' }}>
+                                <ThreadToggleBtn onClick={() => onToggle(threadId)}>
+                                    <FiCornerDownRight />
+                                    {collapsed ? `${bodyLogs.length} more` : 'Collapse'}
+                                </ThreadToggleBtn>
+                            </div>
+                        )}
                     </div>
-
-                    {/* Toggle Button */}
-                    {bodyLogs.length > 0 && (
-                        <ThreadToggleBtn onClick={() => onToggle(threadId)}>
-                            <FiCornerDownRight />
-                            {collapsed ? `${bodyLogs.length} more` : 'Collapse'}
-                        </ThreadToggleBtn>
-                    )}
-
-                    {/* Body Logs (Collapsible) */}
-                    {!collapsed && bodyLogs.length > 0 && (
-                        <ThreadContainer>
-                            <Droppable droppableId={`thread-${threadId}`} type="LOG_LIST">
-                                {(provided, snapshot) => (
-                                    <div
-                                        ref={provided.innerRef}
-                                        {...provided.droppableProps}
-                                        style={{
-                                            minHeight: '5px',
-                                            background: snapshot.isDraggingOver ? 'rgba(0,0,0,0.02)' : 'transparent',
-                                            borderRadius: '4px'
-                                        }}
-                                    >
-                                        {bodyLogs.map((log, i) => (
-                                            <SidebarLogItem
-                                                key={log.id}
-                                                log={log}
-                                                index={i} // Note: index starts from 0 relative to Droppable
-                                                isActive={activeLogId === log.id}
-                                                onClick={onLogClick}
-                                                modelName={log.modelId ? modelMap.get(log.modelId) : undefined}
-                                                formatDate={formatDate}
-                                                inThread={true}
-                                                untitledText={untitledText}
-                                            />
-                                        ))}
-                                        {provided.placeholder}
-                                    </div>
-                                )}
-                            </Droppable>
-                        </ThreadContainer>
-                    )}
                 </div>
             )}
         </Draggable>

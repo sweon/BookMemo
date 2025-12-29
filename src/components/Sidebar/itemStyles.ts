@@ -4,26 +4,24 @@ import { Link } from 'react-router-dom';
 export const LogItemLink = styled(Link) <{ $isActive: boolean; $inThread?: boolean; $isThreadStart?: boolean; $isThreadEnd?: boolean }>`
   display: block;
   padding: 0.5rem 0.75rem;
+  padding-left: ${({ $inThread }) => ($inThread ? '1.5rem' : '0.75rem')};
   border-radius: 6px;
-  margin-bottom: ${({ $inThread, $isThreadEnd }) => ($inThread && !$isThreadEnd ? '0' : '0.125rem')};
+  margin-bottom: 0.125rem;
   text-decoration: none;
   background: ${({ $isActive, theme }) => ($isActive ? theme.colors.border : 'transparent')};
   color: ${({ theme }) => theme.colors.text};
-  
-  margin-left: ${({ $inThread }) => ($inThread ? '0' : '0')}; // Reset margin, indentation handled by container
   position: relative;
   
-  /* Connector styles if needed, but for nested structure we might use border-left on container */
-  ${({ $inThread, theme, $isThreadStart, $isThreadEnd }) => $inThread && `
+  /* Connector for child logs */
+  ${({ $inThread, theme }) => $inThread && `
     &::before {
       content: '';
       position: absolute;
-      left: -0.75rem;
-      top: ${$isThreadStart ? '50%' : '0'};
-      bottom: ${$isThreadEnd ? '50%' : '0'};
+      left: 0.75rem;
+      top: 0;
+      bottom: 0;
       width: 2px;
       background-color: ${theme.colors.border};
-      display: none; // Disable old connector style for now
     }
   `}
 

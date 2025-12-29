@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
+import type { Log } from '../../db';
 import { useNavigate, useParams } from 'react-router-dom'; // Ensure react-router-dom is installed
 import { FiPlus, FiMinus, FiSettings, FiSun, FiMoon, FiSearch, FiX, FiRefreshCw, FiArrowUpCircle } from 'react-icons/fi';
 import { useRegisterSW } from 'virtual:pwa-register/react';
@@ -250,52 +251,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     return map;
   }, [allModels]);
 
-  const items = React.useMemo(() => {
+  type FlatItem =
+    | { type: 'single', log: Log }
+    | { type: 'thread-header', log: Log, threadId: string, threadLogs: Log[] }
+    | { type: 'thread-child', log: Log, threadId: string };
+
+  const flatItems: FlatItem[] = React.useMemo(() => {
     if (!allLogs || !allModels) return [];
 
-    let result = [...allLogs];
+    let filtered = [...allLogs];
 
     // Filter
     if (searchQuery) {
-      if (searchQuery.startsWith('tag:')) {
-        const query = searchQuery.slice(4).trim().toLowerCase();
-        if (query) {
-          result = result.filter(log => {
-            const hasTag = log.tags?.some(t => t.toLowerCase().includes(query));
-            const modelName = allModels.find(m => m.id === log.modelId)?.name.toLowerCase() || '';
-            const hasModel = modelName.includes(query);
-            return hasTag || hasModel;
-          });
-        }
-      } else {
-        const lowerSearch = searchQuery.toLowerCase();
-        result = result.filter(l =>
-          l.title.toLowerCase().includes(lowerSearch) ||
-          l.tags.some(t => t.toLowerCase().includes(lowerSearch))
-        );
-      }
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(l =>
+        l.title.toLowerCase().includes(q) ||
+        l.tags.some(t => t.toLowerCase().includes(q))
+      );
     }
 
-    // Sort
+    // Sort models
     const modelOrderMap = new Map<number, number>();
-    allModels.forEach(m => {
-      modelOrderMap.set(m.id!, m.order ?? 999);
-    });
-
-    const commentActivity = new Map<number, number>();
-    if (sortBy === 'comment-desc' && allComments) {
-      allComments.forEach(c => {
-        const time = new Date(c.createdAt).getTime();
-        const current = commentActivity.get(c.logId) || 0;
-        if (time > current) commentActivity.set(c.logId, time);
-      });
-    }
+    allModels.forEach(m => modelOrderMap.set(m.id!, m.order ?? 999));
 
     // Grouping
-    const groups = new Map<string, typeof result>();
-    const singles: typeof result = [];
+    const groups = new Map<string, Log[]>();
+    const singles: Log[] = [];
 
-    result.forEach(l => {
+    filtered.forEach(l => {
       if (l.threadId) {
         if (!groups.has(l.threadId)) groups.set(l.threadId, []);
         groups.get(l.threadId)!.push(l);
@@ -304,54 +287,45 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       }
     });
 
-    // Sort logs within threads by threadOrder
-    groups.forEach(groupLogs => {
-      groupLogs.sort((a, b) => (a.threadOrder ?? 0) - (b.threadOrder ?? 0));
-    });
+    groups.forEach(g => g.sort((a, b) => (a.threadOrder ?? 0) - (b.threadOrder ?? 0)));
 
-    type SortableItem = {
-      type: 'single', log: typeof result[0], representativeLog: typeof result[0]
+    type SortableGroup = {
+      type: 'single', log: Log, lastDate: Date
     } | {
-      type: 'group', logs: typeof result, representativeLog: typeof result[0], threadId: string
+      type: 'thread', logs: Log[], threadId: string, lastDate: Date
     };
 
-    const sortableItems: SortableItem[] = [
-      ...singles.map(l => ({ type: 'single' as const, log: l, representativeLog: l })),
+    const sortableGroups: SortableGroup[] = [
+      ...singles.map(l => ({ type: 'single' as const, log: l, lastDate: l.createdAt })),
       ...Array.from(groups.entries()).map(([tid, g]) => {
-        const latest = g.reduce((prev, curr) => (new Date(prev.createdAt) > new Date(curr.createdAt) ? prev : curr), g[0]);
-        return { type: 'group' as const, logs: g, representativeLog: latest, threadId: tid };
+        const latest = g.reduce((p, c) => (new Date(p.createdAt) > new Date(c.createdAt) ? p : c), g[0]);
+        return { type: 'thread' as const, logs: g, threadId: tid, lastDate: latest.createdAt };
       })
     ];
 
-    // Main Sort
-    sortableItems.sort((itemA, itemB) => {
-      const a = itemA.representativeLog;
-      const b = itemB.representativeLog;
-
-      if (sortBy === 'date-desc') {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      } else if (sortBy === 'date-asc') {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      } else if (sortBy === 'model-desc' || sortBy === 'model-asc') {
-        const orderA = a.modelId ? (modelOrderMap.get(a.modelId) ?? 999) : 1000;
-        const orderB = b.modelId ? (modelOrderMap.get(b.modelId) ?? 999) : 1000;
-        if (orderA !== orderB) {
-          return sortBy === 'model-desc' ? orderA - orderB : orderB - orderA;
-        }
-        const timeA = new Date(a.createdAt).getTime();
-        const timeB = new Date(b.createdAt).getTime();
-        return sortBy === 'model-desc' ? timeB - timeA : timeA - timeB;
-      } else if (sortBy === 'comment-desc') {
-        const timeA = commentActivity.get(a.id!) || 0;
-        const timeB = commentActivity.get(b.id!) || 0;
-        if (timeA !== timeB) return timeB - timeA;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
+    sortableGroups.sort((a, b) => {
+      if (sortBy === 'date-desc') return new Date(b.lastDate).getTime() - new Date(a.lastDate).getTime();
+      if (sortBy === 'date-asc') return new Date(a.lastDate).getTime() - new Date(b.lastDate).getTime();
       return 0;
     });
 
-    return sortableItems;
-  }, [allLogs, allModels, allComments, searchQuery, sortBy]);
+    const flat: FlatItem[] = [];
+    sortableGroups.forEach(g => {
+      if (g.type === 'single') {
+        flat.push({ type: 'single', log: g.log });
+      } else {
+        const header = g.logs[0];
+        flat.push({ type: 'thread-header', log: header, threadId: g.threadId, threadLogs: g.logs });
+        if (!collapsedThreads.has(g.threadId)) {
+          g.logs.slice(1).forEach(child => {
+            flat.push({ type: 'thread-child', log: child, threadId: g.threadId });
+          });
+        }
+      }
+    });
+
+    return flat;
+  }, [allLogs, allModels, allComments, searchQuery, sortBy, collapsedThreads]);
 
 
   const onDragUpdate = (update: DragUpdate) => {
@@ -366,29 +340,49 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     setCombineTargetId(null);
     const { source, destination, combine, draggableId } = result;
 
+    const forceReflow = () => {
+      // 1px scroll hack for mobile repaint issues
+      const list = document.querySelector('[data-rfd-droppable-id="root"]');
+      if (list) {
+        const currentScroll = list.scrollTop;
+        list.scrollTop += 1;
+        requestAnimationFrame(() => {
+          list.scrollTop = currentScroll;
+        });
+      }
+    };
+
     const updateThreadOrder = async (threadId: string, logIds: number[]) => {
       await db.transaction('rw', db.logs, async () => {
         for (let i = 0; i < logIds.length; i++) {
           await db.logs.update(logIds[i], { threadId, threadOrder: i });
         }
       });
+      forceReflow();
+    };
+
+    const parseLogId = (dId: string) => {
+      if (dId.startsWith('thread-header-')) return Number(dId.replace('thread-header-', ''));
+      if (dId.startsWith('thread-child-')) return Number(dId.replace('thread-child-', ''));
+      return Number(dId);
     };
 
     if (combine) {
-      if (draggableId.startsWith('thread-group-')) return;
+      const sourceId = parseLogId(draggableId);
+      const targetId = parseLogId(combine.draggableId);
 
-      const sourceId = Number(draggableId);
-      const targetIdStr = combine.draggableId;
+      if (sourceId === targetId) return;
 
-      if (targetIdStr.startsWith('thread-group-')) {
-        const targetThreadId = targetIdStr.replace('thread-group-', '');
-        const targetThreadLogs = await db.logs.where('threadId').equals(targetThreadId).sortBy('threadOrder');
-        const newLogIds = [...targetThreadLogs.map(l => l.id!), sourceId];
-        await updateThreadOrder(targetThreadId, newLogIds);
+      const targetLog = await db.logs.get(targetId);
+      if (!targetLog) return;
+
+      if (targetLog.threadId) {
+        const tid = targetLog.threadId;
+        const members = await db.logs.where('threadId').equals(tid).sortBy('threadOrder');
+        const newIds = members.filter(m => m.id !== sourceId).map(m => m.id!);
+        newIds.push(sourceId);
+        await updateThreadOrder(tid, newIds);
       } else {
-        const targetId = Number(targetIdStr);
-        if (sourceId === targetId) return;
-
         const newThreadId = crypto.randomUUID();
         await updateThreadOrder(newThreadId, [targetId, sourceId]);
       }
@@ -396,36 +390,53 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     }
 
     if (!destination) return;
-    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+    if (source.index === destination.index) return;
 
-    const isSourceRoot = source.droppableId === 'root';
-    const isDestRoot = destination.droppableId === 'root';
+    // Movement logic for flat list: Determine thread membership by neighbors
+    const movedFlatItem = flatItems[source.index];
+    if (movedFlatItem.type === 'thread-header') return; // Headers are moved as groups if drag-disabled is off, but here we only allow individuals
 
-    if (draggableId.startsWith('thread-group-')) {
-      return;
+    const logId = movedFlatItem.log.id!;
+
+    // Simulate list after move to see neighbors
+    const newFlatList = [...flatItems];
+    const [removed] = newFlatList.splice(source.index, 1);
+    newFlatList.splice(destination.index, 0, removed);
+
+    const prevItem = newFlatList[destination.index - 1];
+    const nextItem = newFlatList[destination.index + 1];
+
+    let newThreadId: string | undefined = undefined;
+
+    // Logic: Join thread if dropped after a header or between children
+    if (prevItem) {
+      if (prevItem.type === 'thread-header' || prevItem.type === 'thread-child') {
+        newThreadId = prevItem.threadId;
+      }
+    } else if (nextItem) {
+      // If at the very top, check if it was dropped before a child (it shouldn't really happen with headers)
+      if (nextItem.type === 'thread-child') {
+        newThreadId = nextItem.threadId;
+      }
     }
 
-    const logId = Number(draggableId);
+    if (newThreadId) {
+      // Join or stay in thread
+      await db.logs.update(logId, { threadId: newThreadId });
 
-    if (!isSourceRoot && isDestRoot) {
-      // Move from inside Thread to Root (Detach)
+      // Recalcalculate order for the target thread
+      const members = newFlatList.filter(item =>
+        (item.type === 'thread-header' || item.type === 'thread-child') &&
+        ('threadId' in item && item.threadId === newThreadId)
+      );
+      const ids = members.map(m => m.log.id!);
+      await updateThreadOrder(newThreadId, ids);
+    } else {
+      // Become single log
       await db.logs.update(logId, { threadId: undefined, threadOrder: undefined });
-      return;
     }
 
-    if (!isDestRoot) {
-      // Move into a thread (from Root or another Thread)
-      const targetThreadId = destination.droppableId.replace('thread-', '');
-
-      const currentLogs = await db.logs.where('threadId').equals(targetThreadId).sortBy('threadOrder');
-      const filteredLogs = currentLogs.filter(l => l.id !== logId);
-
-      const newLogIds = filteredLogs.map(l => l.id!);
-      newLogIds.splice(destination.index + 1, 0, logId);
-
-      await updateThreadOrder(targetThreadId, newLogIds);
-      return;
-    }
+    forceReflow();
   };
 
 
@@ -533,27 +544,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         <Droppable droppableId="root" isCombineEnabled type="LOG_LIST">
           {(provided) => (
             <LogList ref={provided.innerRef} {...provided.droppableProps}>
-              {items.map((item, index) => {
+              {flatItems.map((item, index) => {
                 if (item.type === 'single') {
+                  const logId = item.log.id!;
                   return (
                     <SidebarLogItem
-                      key={item.log.id}
+                      key={logId}
                       log={item.log}
                       index={index}
-                      isActive={Number(id) === item.log.id}
+                      isActive={Number(id) === logId}
                       onClick={onCloseMobile}
                       modelName={modelNameMap.get(item.log.modelId!)}
                       formatDate={(d: Date) => format(d, 'yy.MM.dd HH:mm')}
                       untitledText={t.sidebar.untitled}
-                      isCombineTarget={combineTargetId === String(item.log.id)}
+                      isCombineTarget={combineTargetId === String(logId)}
                     />
                   );
-                } else {
+                } else if (item.type === 'thread-header') {
+                  const logId = item.log.id!;
                   return (
                     <SidebarThreadItem
-                      key={item.threadId}
+                      key={`header-${item.threadId}`}
                       threadId={item.threadId}
-                      logs={item.logs}
+                      logs={item.threadLogs}
                       index={index}
                       collapsed={collapsedThreads.has(item.threadId)}
                       onToggle={toggleThread}
@@ -562,7 +575,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
                       formatDate={(d: Date) => format(d, 'yy.MM.dd HH:mm')}
                       untitledText={t.sidebar.untitled}
                       onLogClick={onCloseMobile}
-                      isCombineTarget={combineTargetId === `thread-group-${item.threadId}`}
+                      isCombineTarget={combineTargetId === `thread-header-${logId}`}
+                    />
+                  );
+                } else {
+                  // thread-child
+                  const logId = item.log.id!;
+                  return (
+                    <SidebarLogItem
+                      key={logId}
+                      log={item.log}
+                      index={index}
+                      isActive={Number(id) === logId}
+                      onClick={onCloseMobile}
+                      modelName={modelNameMap.get(item.log.modelId!)}
+                      formatDate={(d: Date) => format(d, 'yy.MM.dd HH:mm')}
+                      untitledText={t.sidebar.untitled}
+                      inThread={true}
+                      isCombineTarget={combineTargetId === `thread-child-${logId}`}
                     />
                   );
                 }

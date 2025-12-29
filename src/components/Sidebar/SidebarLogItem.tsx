@@ -26,8 +26,10 @@ export const SidebarLogItem: React.FC<Props> = ({
     untitledText,
     isCombineTarget
 }) => {
+    const draggableId = inThread ? `thread-child-${log.id}` : String(log.id);
+
     return (
-        <Draggable draggableId={String(log.id)} index={index}>
+        <Draggable draggableId={draggableId} index={index}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}
