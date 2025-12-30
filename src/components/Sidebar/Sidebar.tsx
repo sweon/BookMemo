@@ -323,6 +323,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     sortableGroups.sort((a, b) => {
       if (sortBy === 'date-desc') return new Date(b.lastDate).getTime() - new Date(a.lastDate).getTime();
       if (sortBy === 'date-asc') return new Date(a.lastDate).getTime() - new Date(b.lastDate).getTime();
+
+      if (sortBy === 'model-desc' || sortBy === 'model-asc') {
+        const aLog = a.type === 'single' ? a.log : a.logs[0];
+        const bLog = b.type === 'single' ? b.log : b.logs[0];
+        const aModelOrder = aLog.modelId ? (modelOrderMap.get(aLog.modelId) ?? 999) : 999;
+        const bModelOrder = bLog.modelId ? (modelOrderMap.get(bLog.modelId) ?? 999) : 999;
+
+        if (sortBy === 'model-desc') {
+          // Lower order number = higher priority = show first
+          if (aModelOrder !== bModelOrder) return aModelOrder - bModelOrder;
+          // Same model order: sort by date (newest first)
+          return new Date(b.lastDate).getTime() - new Date(a.lastDate).getTime();
+        } else {
+          // model-asc: Higher order = show first
+          if (aModelOrder !== bModelOrder) return bModelOrder - aModelOrder;
+          // Same model order: sort by date (newest first)
+          return new Date(b.lastDate).getTime() - new Date(a.lastDate).getTime();
+        }
+      }
+
       return 0;
     });
 
