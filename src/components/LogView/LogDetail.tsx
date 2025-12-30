@@ -134,13 +134,8 @@ export const LogDetail: React.FC = () => {
             setTags(log.tags.join(', '));
             setModelId(log.modelId);
 
-            // Set editing mode based on URL param or keep current state
-            if (shouldEdit) {
-                setIsEditing(true);
-            } else if (!shouldEdit && searchParams.get('edit') === null) {
-                // Only reset to view mode if there's no edit param at all
-                // This preserves the editing state during navigation
-            }
+            // Set editing mode based on URL param
+            setIsEditing(shouldEdit);
         } else if (isNew) {
             setTitle('');
             setContent('');
@@ -174,8 +169,7 @@ export const LogDetail: React.FC = () => {
             if (searchParams.get('edit')) {
                 navigate(`/log/${id}`, { replace: true });
             }
-
-            setIsEditing(false);
+            // Don't set isEditing here - let the useEffect handle it based on URL
         } else {
             const newId = await db.logs.add({
                 title: title || t.log_detail.untitled,
