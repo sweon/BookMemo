@@ -71,7 +71,7 @@ export const SidebarThreadItem: React.FC<Props> = ({
                             <div style={{ paddingLeft: '0.5rem' }}>
                                 <ThreadToggleBtn onClick={() => onToggle(threadId)}>
                                     <FiCornerDownRight />
-                                    {collapsed ? `${bodyLogs.length}${t.sidebar.more_logs}` : t.sidebar.collapse}
+                                    {collapsed ? t.sidebar.more_logs.replace('{count}', String(bodyLogs.length)) : t.sidebar.collapse}
                                 </ThreadToggleBtn>
                             </div>
                         )}

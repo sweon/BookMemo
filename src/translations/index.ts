@@ -22,7 +22,7 @@ export const translations = {
             check_failed: "Check failed. Try again.",
             pwa_not_supported: "PWA not supported",
             collapse: "Collapse",
-            more_logs: "more"
+            more_logs: "{count} more"
         },
         settings: {
             title: "Settings",
@@ -152,7 +152,7 @@ export const translations = {
             check_failed: "확인 실패. 다시 시도하세요.",
             pwa_not_supported: "PWA를 지원하지 않습니다.",
             collapse: "접기",
-            more_logs: "개 더보기"
+            more_logs: "{count}개 더보기"
         },
         settings: {
             title: "설정",
