@@ -125,27 +125,30 @@ export const LogDetail: React.FC = () => {
     const models = useLiveQuery(() => db.models.orderBy('order').toArray());
 
     useEffect(() => {
+        // Check for edit mode from URL first
+        const shouldEdit = searchParams.get('edit') === 'true';
+
         if (log) {
             setTitle(log.title);
             setContent(log.content);
             setTags(log.tags.join(', '));
             setModelId(log.modelId);
-            setModelId(log.modelId);
 
-            // Check for edit mode query param
-            if (searchParams.get('edit') === 'true') {
+            // Set editing mode based on URL param or keep current state
+            if (shouldEdit) {
                 setIsEditing(true);
-            } else {
-                setIsEditing(false); // Reset to view mode when ID changes
+            } else if (!shouldEdit && searchParams.get('edit') === null) {
+                // Only reset to view mode if there's no edit param at all
+                // This preserves the editing state during navigation
             }
         } else if (isNew) {
             setTitle('');
             setContent('');
             setTags('');
-            setModelId(undefined); // Should set default model
+            setModelId(undefined);
             setIsEditing(true);
         }
-    }, [log, isNew, id]);
+    }, [log, isNew, id, searchParams]);
 
     // Set default model if new and models loaded
     useEffect(() => {
