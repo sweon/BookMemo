@@ -8,8 +8,8 @@ import { FiPlus, FiMinus, FiSettings, FiSun, FiMoon, FiSearch, FiX, FiRefreshCw,
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Tooltip } from '../UI/Tooltip';
 import { SyncModal } from '../Sync/SyncModal';
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import type { DropResult, DragUpdate } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import type { DropResult, DragUpdate, DragStart } from '@hello-pangea/dnd';
 import { Toast } from '../UI/Toast';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSearch } from '../../contexts/SearchContext';
@@ -122,6 +122,7 @@ const LogList = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem;
+  padding-bottom: 100px; /* Extra space for extract zone when dragging downward */
   scrollbar-width: thin;
 
   /* Improve drag behavior on touch devices */
@@ -176,6 +177,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   // Expansion state (now collapsed by default)
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [combineTargetId, setCombineTargetId] = useState<string | null>(null);
+  const [draggingThreadId, setDraggingThreadId] = useState<string | null>(null);
+  const [isOverExtractZone, setIsOverExtractZone] = useState(false);
 
   const toggleThread = (threadId: string) => {
     const newSet = new Set(expandedThreads);
@@ -275,7 +278,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   type FlatItem =
     | { type: 'single', log: Log }
     | { type: 'thread-header', log: Log, threadId: string, threadLogs: Log[] }
-    | { type: 'thread-child', log: Log, threadId: string };
+    | { type: 'thread-child', log: Log, threadId: string }
+    | { type: 'extract-zone', threadId: string };
 
   const flatItems: FlatItem[] = React.useMemo(() => {
     if (!allLogs || !allModels) return [];
@@ -372,6 +376,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           g.logs.slice(1).forEach(child => {
             flat.push({ type: 'thread-child', log: child, threadId: g.threadId });
           });
+          // Always add extract-zone if expanded
+          flat.push({ type: 'extract-zone', threadId: g.threadId });
         }
       }
     });
@@ -379,16 +385,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     return flat;
   }, [allLogs, allModels, allComments, searchQuery, sortBy, expandedThreads]);
 
+  const onDragStart = (start: DragStart) => {
+    // Only care if dragging a thread child
+    const item = flatItems[start.source.index];
+    if (item && item.type === 'thread-child') {
+      setDraggingThreadId(item.threadId);
+    }
+  };
+
   const onDragUpdate = (update: DragUpdate) => {
     if (update.combine) {
       setCombineTargetId(update.combine.draggableId);
     } else {
       setCombineTargetId(null);
     }
+
+    if (!update.destination) {
+      setIsOverExtractZone(false);
+      return;
+    }
+    const destIndex = update.destination.index;
+    const destItem = flatItems[destIndex];
+
+    if (destItem && destItem.type === 'extract-zone') {
+      setIsOverExtractZone(true);
+    } else {
+      setIsOverExtractZone(false);
+    }
   };
 
   const onDragEnd = async (result: DropResult) => {
+    // Always cleanup drag state, even if drag was cancelled
     setCombineTargetId(null);
+    setDraggingThreadId(null);
+    setIsOverExtractZone(false);
+
     const { source, destination, combine, draggableId } = result;
 
     const parseLogId = (dId: string) => {
@@ -408,10 +439,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     if (combine) {
       const sourceId = parseLogId(draggableId);
       const targetId = parseLogId(combine.draggableId);
-      if (sourceId === targetId) return;
+      if (sourceId === targetId) {
+        return;
+      }
 
       const targetLog = await db.logs.get(targetId);
-      if (!targetLog) return;
+      if (!targetLog) {
+        return;
+      }
 
       if (targetLog.threadId) {
         const tid = targetLog.threadId;
@@ -426,11 +461,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       return;
     }
 
-    if (!destination) return;
-    if (source.index === destination.index) return;
+    if (!destination) {
+      return;
+    }
+    if (source.index === destination.index) {
+      return;
+    }
 
     const movedFlatItem = flatItems[source.index];
-    if (!movedFlatItem || movedFlatItem.type === 'thread-header') return;
+    if (!movedFlatItem || movedFlatItem.type === 'thread-header' || movedFlatItem.type === 'extract-zone') {
+      return;
+    }
 
     const logId = movedFlatItem.log.id!;
     const nextList = [...flatItems];
@@ -459,13 +500,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     ) {
       targetThreadId = prevItem.threadId;
     }
+    // Case 3: Dropped on or before/after extract-zone
+    // If we drop onto extract-zone, destination index points to it.
+    else if ((nextItem && nextItem.type === 'extract-zone') || (prevItem && prevItem.type === 'extract-zone')) {
+      targetThreadId = undefined; // Extract!
+    }
     // Otherwise: targetThreadId remains undefined → extract from thread
 
     if (targetThreadId) {
       await db.logs.update(logId, { threadId: targetThreadId });
-      const members = nextList.filter(item =>
+      const members = nextList.filter((item): item is Extract<FlatItem, { type: 'thread-header' | 'thread-child' }> =>
         (item.type === 'thread-header' || item.type === 'thread-child') &&
-        ('threadId' in item && item.threadId === targetThreadId)
+        item.threadId === targetThreadId
       );
       const ids = members.map(m => m.log.id!);
       await updateThreadOrder(targetThreadId, ids);
@@ -575,6 +621,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       </Header>
 
       <DragDropContext
+        onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         onDragUpdate={onDragUpdate}
       >
@@ -616,8 +663,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
                       t={t}
                     />
                   );
-                } else {
-                  // thread-child
+                } else if (item.type === 'thread-child') {
                   const logId = item.log.id!;
                   return (
                     <SidebarLogItem
@@ -633,7 +679,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
                       isCombineTarget={combineTargetId === `thread - child - ${logId} `}
                     />
                   );
+                } else if (item.type === 'extract-zone') {
+                  const isVisible = draggingThreadId === item.threadId;
+                  return (
+                    <Draggable key={`extract-zone-${item.threadId}`} draggableId={`extract-zone-${item.threadId}`} index={index} isDragDisabled={true}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          style={{
+                            ...provided.draggableProps.style,
+                            height: isVisible ? '60px' : '0px',
+                            margin: isVisible ? '64px 0 16px 16px' : '0px',
+                            opacity: isVisible ? 1 : 0,
+                            overflow: 'hidden',
+                            borderRadius: '8px',
+                            border: isVisible ? '2px dashed #93c5fd' : 'none',
+                            backgroundColor: isOverExtractZone ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.05)',
+                            borderColor: isOverExtractZone ? '#3b82f6' : '#93c5fd',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: isOverExtractZone ? '#3b82f6' : '#93c5fd',
+                            fontWeight: 500,
+                            pointerEvents: 'none',
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          {t.sidebar.drop_to_extract || "Drop to Extract"}
+                        </div>
+                      )}
+                    </Draggable>
+                  );
                 }
+                return null;
               })}
               {provided.placeholder}
             </LogList>
