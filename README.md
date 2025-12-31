@@ -23,7 +23,7 @@
 - **Offline Capable**: Fully functional without an internet connection. Install it as a standalone app on both desktop and mobile.
 
 ### 🎨 Premium UX/UI
-- **Theme Support**: Includes both Dark and Light modes with global font-size adjustments and premium aesthetics.
+- **Theme Support**: Includes both Dark and Light modes with global font-size adjustments.
 - **Bilingual Interface**: Fully localized support for both English and Korean.
 
 ---
