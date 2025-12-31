@@ -474,12 +474,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     // Otherwise: targetThreadId remains undefined → extract from thread
 
     if (targetThreadId) {
+      // Update the log to join the thread
       await db.logs.update(logId, { threadId: targetThreadId });
+
+      // Get all thread members from the simulated nextList in their new order
+      // We need to include the dragged item (which may not have threadId yet in nextList)
       const members = nextList.filter((item): item is Extract<FlatItem, { type: 'thread-header' | 'thread-child' }> =>
         (item.type === 'thread-header' || item.type === 'thread-child') &&
-        item.threadId === targetThreadId
+        (item.threadId === targetThreadId || item.log.id === logId) // Include the dragged item
       );
+
+      // Extract the IDs in the order they appear in nextList
       const ids = members.map(m => m.log.id!);
+
+      // Update all thread members with their new order
       await updateThreadOrder(targetThreadId, ids);
     } else {
       await db.logs.update(logId, { threadId: undefined, threadOrder: undefined });
