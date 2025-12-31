@@ -6,16 +6,16 @@
 [![Dexie](https://img.shields.io/badge/Dexie.js-local--first-blue)](https://dexie.org/)
 [![PWA](https://img.shields.io/badge/PWA-Installable-hotpink)](https://web.dev/progressive-web-apps/)
 
-**LLMemo** is a Local-first Progressive Web App (PWA) designed to systematically log, manage, and store your LLM interaction results and knowledge. All data is kept securely within your own browser with advanced threading support and seamless device-to-device synchronization.
+**LLMemo** is a Local-first Progressive Web App (PWA) designed to systematically log, manage, and store your LLM interaction results and knowledge. All data is kept securely within your own browser with threading support and seamless device-to-device synchronization.
 
 ---
 
 ## ✨ Key Features
 
 ### 📂 Smart Organization
-- **Threads**: Group multiple logs into a single conversation thread using intuitive drag-and-drop. Manage complex dialogue flows at a glance.
-- **Smart Deletion**: When deleting a thread header, choose between deleting the entire thread or just the specific log (with automatic re-sequencing).
-- **Advanced Search**: Instantly find logs using tags (`#tag`) or specific models (`tag:model`).
+- **Threads**: Group multiple logs into a single conversation thread using intuitive drag-and-drop.
+- **Smart Deletion**: When deleting a thread header, choose between deleting the entire thread or just the specific log.
+- **Tags**: Instantly find logs using tags or specific models (tag:tag or tag:model).
 
 ### 🔄 Seamless Sync & Privacy
 - **Direct Peer-to-Peer Sync**: Synchronize your data directly between your own devices without relying on central servers, through a secure P2P mechanism.
@@ -23,7 +23,6 @@
 - **Offline Capable**: Fully functional without an internet connection. Install it as a standalone app on both desktop and mobile.
 
 ### 🎨 Premium UX/UI
-- **Mobile-Optimized UX**: Features a strict 800ms "Hold to Drag" mechanism on mobile devices to prevent accidental drags while scrolling.
 - **Theme Support**: Includes both Dark and Light modes with global font-size adjustments and premium aesthetics.
 - **Bilingual Interface**: Fully localized support for both English and Korean.
 
