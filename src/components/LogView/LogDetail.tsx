@@ -12,6 +12,7 @@ import { FiEdit2, FiTrash2, FiSave, FiX, FiShare2, FiGitMerge } from 'react-icon
 import { format } from 'date-fns';
 import { CommentsSection } from './CommentsSection';
 import { ShareModal } from '../Sync/ShareModal';
+import { DeleteChoiceModal } from './DeleteChoiceModal';
 
 const Container = styled.div`
   display: flex;
@@ -116,6 +117,8 @@ export const LogDetail: React.FC = () => {
     const [tags, setTags] = useState(''); // Comma separated for editing
     const [modelId, setModelId] = useState<number | undefined>(undefined);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeletingThreadHead, setIsDeletingThreadHead] = useState(false);
 
     const log = useLiveQuery(
         () => (id ? db.logs.get(Number(id)) : undefined),
@@ -184,11 +187,70 @@ export const LogDetail: React.FC = () => {
     };
 
     const handleDelete = async () => {
-        if (id && confirm(t.log_detail.delete_confirm)) {
-            await db.logs.delete(Number(id));
-            await db.comments.where('logId').equals(Number(id)).delete();
-            navigate('/');
+        if (!id || !log) return;
+
+        // Check if it's a thread head and has other logs
+        const isHead = !!(log.threadId && log.threadOrder === 0);
+        let hasOthers = false;
+
+        if (isHead && log.threadId) {
+            const threadLogs = await db.logs.where('threadId').equals(log.threadId).toArray();
+            hasOthers = threadLogs.length > 1;
         }
+
+        setIsDeletingThreadHead(isHead && hasOthers);
+        setIsDeleteModalOpen(true);
+    };
+
+    const performDeleteLogOnly = async () => {
+        if (!id || !log) return;
+
+        const threadId = log.threadId;
+        const currentId = Number(id);
+
+        await db.logs.delete(currentId);
+        await db.comments.where('logId').equals(currentId).delete();
+
+        let nextLogId: number | undefined = undefined;
+
+        if (threadId) {
+            const remainingLogs = await db.logs.where('threadId').equals(threadId).sortBy('threadOrder');
+
+            if (remainingLogs.length > 0) {
+                // Re-sequence remaining logs to ensure there's a 0 order and it's contiguous
+                await db.transaction('rw', db.logs, async () => {
+                    for (let i = 0; i < remainingLogs.length; i++) {
+                        await db.logs.update(remainingLogs[i].id!, { threadOrder: i });
+                    }
+                });
+                nextLogId = remainingLogs[0].id;
+            }
+        }
+
+        setIsDeleteModalOpen(false);
+        if (nextLogId) {
+            navigate(`/log/${nextLogId}`, { replace: true });
+        } else {
+            navigate('/', { replace: true });
+        }
+    };
+
+    const performDeleteThread = async () => {
+        if (!log || !log.threadId) return;
+
+        const threadId = log.threadId;
+        const threadLogs = await db.logs.where('threadId').equals(threadId).toArray();
+        const logIds = threadLogs.map(l => l.id!);
+
+        await db.transaction('rw', [db.logs, db.comments], async () => {
+            await db.logs.bulkDelete(logIds);
+            for (const lid of logIds) {
+                await db.comments.where('logId').equals(lid).delete();
+            }
+        });
+
+        setIsDeleteModalOpen(false);
+        navigate('/', { replace: true });
     };
 
     const handleAddThread = async () => {
@@ -343,6 +405,14 @@ export const LogDetail: React.FC = () => {
                     onClose={() => setIsShareModalOpen(false)}
                     logId={log.id!}
                     logTitle={log.title}
+                />
+            )}
+            {isDeleteModalOpen && (
+                <DeleteChoiceModal
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onDeleteLogOnly={performDeleteLogOnly}
+                    onDeleteThread={performDeleteThread}
+                    isThreadHead={isDeletingThreadHead}
                 />
             )}
         </Container>
