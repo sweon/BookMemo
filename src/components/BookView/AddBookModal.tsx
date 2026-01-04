@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { db } from '../../db';
 import { FiX, FiCheck } from 'react-icons/fi';
-import { useLanguage } from '../../contexts/LanguageContext';
+
 
 const Overlay = styled.div`
   position: fixed;
@@ -105,78 +105,78 @@ const Button = styled.button`
 `;
 
 interface AddBookModalProps {
-    onClose: () => void;
+  onClose: () => void;
 }
 
 export const AddBookModal: React.FC<AddBookModalProps> = ({ onClose }) => {
-    const { t } = useLanguage();
-    const [title, setTitle] = useState('');
-    const [author, setAuthor] = useState('');
-    const [totalPages, setTotalPages] = useState('');
+  // const { t } = useLanguage();
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [totalPages, setTotalPages] = useState('');
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!title.trim() || !totalPages) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !totalPages) return;
 
-        try {
-            await db.books.add({
-                title: title.trim(),
-                author: author.trim(),
-                totalPages: parseInt(totalPages, 10),
-                status: 'reading',
-                startDate: new Date(),
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
-            onClose();
-        } catch (error) {
-            console.error('Failed to add book:', error);
-            alert('Failed to add book');
-        }
-    };
+    try {
+      await db.books.add({
+        title: title.trim(),
+        author: author.trim(),
+        totalPages: parseInt(totalPages, 10),
+        status: 'reading',
+        startDate: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      onClose();
+    } catch (error) {
+      console.error('Failed to add book:', error);
+      alert('Failed to add book');
+    }
+  };
 
-    return (
-        <Overlay onClick={onClose}>
-            <Modal onClick={e => e.stopPropagation()}>
-                <Header>
-                    <h3>Add New Book</h3>
-                    <CloseButton onClick={onClose}><FiX size={20} /></CloseButton>
-                </Header>
-                <Form onSubmit={handleSubmit}>
-                    <FormGroup>
-                        <Label>Book Title</Label>
-                        <Input
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                            placeholder="Enter book title"
-                            required
-                            autoFocus
-                        />
-                    </FormGroup>
-                    <FormGroup>
-                        <Label>Author (Optional)</Label>
-                        <Input
-                            value={author}
-                            onChange={e => setAuthor(e.target.value)}
-                            placeholder="Author name"
-                        />
-                    </FormGroup>
-                    <FormGroup>
-                        <Label>Total Pages</Label>
-                        <Input
-                            type="number"
-                            value={totalPages}
-                            onChange={e => setTotalPages(e.target.value)}
-                            placeholder="Total pages"
-                            required
-                            min="1"
-                        />
-                    </FormGroup>
-                    <Button type="submit">
-                        <FiCheck /> Register Book
-                    </Button>
-                </Form>
-            </Modal>
-        </Overlay>
-    );
+  return (
+    <Overlay onClick={onClose}>
+      <Modal onClick={e => e.stopPropagation()}>
+        <Header>
+          <h3>Add New Book</h3>
+          <CloseButton onClick={onClose}><FiX size={20} /></CloseButton>
+        </Header>
+        <Form onSubmit={handleSubmit}>
+          <FormGroup>
+            <Label>Book Title</Label>
+            <Input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Enter book title"
+              required
+              autoFocus
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Author (Optional)</Label>
+            <Input
+              value={author}
+              onChange={e => setAuthor(e.target.value)}
+              placeholder="Author name"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Total Pages</Label>
+            <Input
+              type="number"
+              value={totalPages}
+              onChange={e => setTotalPages(e.target.value)}
+              placeholder="Total pages"
+              required
+              min="1"
+            />
+          </FormGroup>
+          <Button type="submit">
+            <FiCheck /> Register Book
+          </Button>
+        </Form>
+      </Modal>
+    </Overlay>
+  );
 };
