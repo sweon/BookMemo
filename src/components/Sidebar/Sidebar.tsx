@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiMinus, FiSettings, FiSun, FiMoon, FiSearch, FiX, FiRefreshCw, FiArrowUpCircle } from 'react-icons/fi';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Tooltip } from '../UI/Tooltip';
@@ -13,6 +13,8 @@ import { useSearch } from '../../contexts/SearchContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SidebarBookItem } from './SidebarBookItem';
 import { AddBookModal } from '../BookView/AddBookModal';
+
+import pkg from '../../../package.json';
 
 const SidebarContainer = styled.div`
   display: flex;
@@ -158,6 +160,35 @@ interface SidebarProps {
   onCloseMobile: () => void;
 }
 
+const BrandHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem 0.5rem 1.25rem;
+`;
+
+const AppIcon = styled.img`
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+`;
+
+const AppTitle = styled.div`
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+`;
+
+const AppVersion = styled.span`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-weight: 400;
+`;
+
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const { searchQuery, setSearchQuery } = useSearch();
   const { t } = useLanguage();
@@ -166,8 +197,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
 
   const { mode, toggleTheme, increaseFontSize, decreaseFontSize } = useTheme();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { id } = useParams<{ id: string }>();
 
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
@@ -260,12 +289,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
 
   const showUpdateIndicator = needRefresh && updateCheckedManually;
 
-  // Determine active book based on route
-  const isBookRoute = location.pathname.startsWith('/book/');
-  const activeBookId = isBookRoute && id ? Number(id) : undefined;
-
   return (
     <SidebarContainer>
+      <BrandHeader>
+        <AppIcon src="/icon.png" alt="BookMemo" />
+        <AppTitle>
+          BookMemo
+          <AppVersion>v{pkg.version}</AppVersion>
+        </AppTitle>
+      </BrandHeader>
       <Header>
         <TopActions>
           <Button onClick={() => setIsAddBookModalOpen(true)}>
