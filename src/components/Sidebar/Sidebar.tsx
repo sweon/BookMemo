@@ -36,7 +36,7 @@ const SidebarContainer = styled.div`
 `;
 
 const Header = styled.div`
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
@@ -167,7 +167,7 @@ const BrandHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1.25rem 0.1rem 1.25rem;
+  padding: 0.5rem 1.25rem 0 1.25rem;
 `;
 
 const AppTitle = styled.div`
