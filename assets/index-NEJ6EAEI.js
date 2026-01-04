@@ -743,7 +743,7 @@ Please change the parent <Route path="${re}"> to <Route path="${re==="/"?"*":`${
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.25rem 0.25rem 1.25rem;
+  padding: 0.5rem 1.25rem 0.1rem 1.25rem;
 `,rI=Gt.div`
   font-size: 1.1rem;
   font-weight: 700;
