@@ -88,17 +88,20 @@ const ClearButton = styled.button`
   }
 `;
 
+
+
 const Button = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  padding: 0.5rem 0.5rem;
+  padding: 0.4rem 0.6rem;
   border-radius: 6px;
   border: none;
   cursor: pointer;
   background: ${({ theme }) => theme.colors.primary};
   color: white;
+  font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
   
@@ -163,30 +166,23 @@ interface SidebarProps {
 const BrandHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1.25rem 1.25rem 0.5rem 1.25rem;
-`;
-
-const AppIcon = styled.img`
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  object-fit: cover;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem 0.25rem 1.25rem;
 `;
 
 const AppTitle = styled.div`
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
 `;
 
 const AppVersion = styled.span`
   font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.textSecondary};
   font-weight: 400;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
 `;
 
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
@@ -292,11 +288,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   return (
     <SidebarContainer>
       <BrandHeader>
-        <AppIcon src="/icon.png" alt="BookMemo" />
-        <AppTitle>
-          BookMemo
-          <AppVersion>v{pkg.version}</AppVersion>
-        </AppTitle>
+        <AppTitle>BookMemo</AppTitle>
+        <AppVersion>v{pkg.version}</AppVersion>
       </BrandHeader>
       <Header>
         <TopActions>
