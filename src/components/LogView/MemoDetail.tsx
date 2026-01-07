@@ -205,11 +205,17 @@ export const MemoDetail: React.FC = () => {
 
         // Check emptiness
         const hasTitle = !!finalTitle;
-        const hasContent = !!content.trim() || !!quote.trim();
+        const hasContent = !!content.trim();
+        const hasQuote = !!quote.trim();
         const hasPage = pNum !== undefined;
 
-        // Validation: if nothing at all, return (should be disabled anyway)
-        if (!hasTitle && !hasContent && !hasPage) return;
+        // Validation:
+        // 1. If nothing at all (no title, content, quote, page), block.
+        if (!hasTitle && !hasContent && !hasQuote && !hasPage) return;
+
+        // 2. If quote exists, page is MANDATORY.
+        //    (Quote implies it's an excerpt from the book, so it needs location)
+        if (hasQuote && !hasPage) return;
 
         // Logic for auto-title
         if (!hasTitle) {
@@ -415,8 +421,14 @@ export const MemoDetail: React.FC = () => {
                             <ActionButton
                                 $variant="primary"
                                 onClick={handleSave}
-                                disabled={!title.trim() && !pageNumber && !content.trim() && !quote.trim()}
-                                style={{ opacity: (!title.trim() && !pageNumber && !content.trim() && !quote.trim()) ? 0.5 : 1, cursor: (!title.trim() && !pageNumber && !content.trim() && !quote.trim()) ? 'not-allowed' : 'pointer' }}
+                                disabled={
+                                    (!title.trim() && !pageNumber && !content.trim() && !quote.trim()) ||
+                                    (!!quote.trim() && !pageNumber)
+                                }
+                                style={{
+                                    opacity: ((!title.trim() && !pageNumber && !content.trim() && !quote.trim()) || (!!quote.trim() && !pageNumber)) ? 0.5 : 1,
+                                    cursor: ((!title.trim() && !pageNumber && !content.trim() && !quote.trim()) || (!!quote.trim() && !pageNumber)) ? 'not-allowed' : 'pointer'
+                                }}
                             >
                                 <FiSave /> {t.memo_detail.save}
                             </ActionButton>
