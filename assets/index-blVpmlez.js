@@ -2134,14 +2134,14 @@ Error generating stack: `+Ie.message+`
     color: ${({theme:e})=>e.colors.text};
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
-    width: 80px;
+    width: 90px;
 `,Oye=Wt.input`
     background: ${({theme:e})=>e.colors.surface};
     border: 1px solid ${({theme:e})=>e.colors.border};
     color: ${({theme:e})=>e.colors.text};
     padding: 0.25rem 2.2rem 0.25rem 0.5rem;
     border-radius: 4px;
-    width: 150px;
+    width: 170px;
 `,_ye=Wt.div`
     position: relative;
     display: flex;
