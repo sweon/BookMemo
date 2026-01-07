@@ -2141,7 +2141,7 @@ Error generating stack: `+Ie.message+`
     color: ${({theme:e})=>e.colors.text};
     padding: 0.25rem 2.2rem 0.25rem 0.5rem;
     border-radius: 4px;
-    width: 190px;
+    width: 210px;
 `,_ye=Wt.div`
     position: relative;
     display: flex;
