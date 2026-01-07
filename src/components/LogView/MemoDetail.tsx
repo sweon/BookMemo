@@ -247,6 +247,26 @@ export const MemoDetail: React.FC = () => {
                 updatedAt: now,
                 type: 'normal'
             });
+
+            if (targetBookId && pNum) {
+                const b = await db.books.get(targetBookId);
+                if (b) {
+                    const updates: any = {};
+                    if ((b.currentPage || 0) < pNum) {
+                        updates.currentPage = pNum;
+                    }
+
+                    if (pNum >= b.totalPages && b.status !== 'completed') {
+                        updates.status = 'completed';
+                        updates.completedDate = now;
+                    }
+
+                    if (Object.keys(updates).length > 0) {
+                        await db.books.update(targetBookId, updates);
+                    }
+                }
+            }
+
             if (searchParams.get('edit')) {
                 navigate(`/memo/${id}`, { replace: true });
             }
