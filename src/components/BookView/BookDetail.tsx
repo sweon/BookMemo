@@ -187,6 +187,7 @@ const MiniPillButton = styled.button`
 `;
 
 const CustomTooltip = ({ active, payload }: any) => {
+  const { language } = useLanguage();
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -198,7 +199,9 @@ const CustomTooltip = ({ active, payload }: any) => {
         boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
         color: '#fff'
       }}>
-        <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.85em' }}>{format(new Date(data.x), 'MMM d, yyyy HH:mm')}</p>
+        <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.85em' }}>
+          {format(new Date(data.x), language === 'ko' ? 'yyyy년 M월 d일 HH:mm' : 'MMM d, yyyy HH:mm')}
+        </p>
         <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.8em' }}>Page {data.y}</p>
         <p style={{ margin: '2px 0 0 0', fontSize: '0.75em', color: '#60a5fa' }}>
           {data.type === 'start' ? 'Started Reading' : data.type === 'progress' ? 'Progress Record' : (data.title || 'Untitled Memo')}
@@ -212,7 +215,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 export const BookDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [refAreaLeft, setRefAreaLeft] = React.useState<any>(null);
   const [refAreaRight, setRefAreaRight] = React.useState<any>(null);
@@ -551,7 +554,7 @@ export const BookDetail: React.FC = () => {
                   name="Date"
                   domain={zoomDomain || [book.startDate.getTime(), 'dataMax']}
                   allowDataOverflow={true}
-                  tickFormatter={(timestamp) => format(new Date(timestamp), 'yy/M/d')}
+                  tickFormatter={(timestamp) => format(new Date(timestamp), language === 'ko' ? 'yy.M.d' : 'yy/M/d')}
                   tick={{ fontSize: 11, fill: '#888' }}
                   angle={-45}
                   textAnchor="end"
@@ -683,7 +686,7 @@ export const BookDetail: React.FC = () => {
           <MemoCard key={memo.id} onClick={() => navigate(`/memo/${memo.id}`)}>
             <PageMeta>
               <span>{memo.pageNumber ? `${t.book_detail.page} ${memo.pageNumber}` : t.book_detail.whole_book}</span>
-              <span>{format(memo.createdAt, 'HH:mm • MMM d')}</span>
+              <span>{format(memo.createdAt, language === 'ko' ? 'M월 d일 HH:mm' : 'MMM d, HH:mm')}</span>
             </PageMeta>
             {memo.quote && <Quote>“{memo.quote}”</Quote>}
             <MemoContent>{memo.title}</MemoContent>

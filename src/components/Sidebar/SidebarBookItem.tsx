@@ -83,7 +83,7 @@ interface Props {
 
 export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick }) => {
   const { id: activeId, memoId: activeMemoId } = useParams();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { searchQuery } = useSearch();
   const [isCollapsed, setIsCollapsed] = useState(true);
 
@@ -165,7 +165,7 @@ export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick }) => {
                 </MemoTitle>
                 <MemoDate>
                   {memo.pageNumber ? `p.${memo.pageNumber} • ` : ''}
-                  {format(memo.createdAt, 'MMM d, HH:mm')}
+                  {format(memo.createdAt, language === 'ko' ? 'M월 d일 HH:mm' : 'MMM d, HH:mm')}
                 </MemoDate>
               </MemoItemLink>
             );

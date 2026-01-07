@@ -8,7 +8,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 import { MarkdownEditor } from '../Editor/MarkdownEditor';
 import { MarkdownView } from '../Editor/MarkdownView';
-import { FiEdit2, FiTrash2, FiSave, FiX, FiShare2, FiArrowLeft } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiSave, FiX, FiShare2, FiArrowLeft, FiCalendar } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { CommentsSection } from './CommentsSection';
 import { ShareModal } from '../Sync/ShareModal';
@@ -73,7 +73,31 @@ const MetaInput = styled.input`
     color: ${({ theme }) => theme.colors.text};
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
-    width: 100px;
+    width: 80px;
+`;
+
+const DateInput = styled.input`
+    background: ${({ theme }) => theme.colors.surface};
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    color: ${({ theme }) => theme.colors.text};
+    padding: 0.25rem 2.2rem 0.25rem 0.5rem;
+    border-radius: 4px;
+    width: 150px;
+`;
+
+const InputWrapper = styled.div`
+    position: relative;
+    display: flex;
+    align-items: center;
+`;
+
+const CalendarIconButton = styled(FiCalendar)`
+    position: absolute;
+    right: 8px;
+    color: ${({ theme }) => theme.colors.primary};
+    cursor: pointer;
+    font-size: 1.1rem;
+    stroke-width: 2.5;
 `;
 
 const QuoteInput = styled.textarea`
@@ -134,6 +158,13 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'danger' }>`
   }
 `;
 
+const formatDateForInput = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
 export const MemoDetail: React.FC = () => {
     const { id, bookId } = useParams<{ id: string, bookId: string }>();
     const navigate = useNavigate();
@@ -146,6 +177,7 @@ export const MemoDetail: React.FC = () => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [tags, setTags] = useState('');
+    const [date, setDate] = useState('');
 
     // New fields
     const [pageNumber, setPageNumber] = useState('');
@@ -173,6 +205,7 @@ export const MemoDetail: React.FC = () => {
             setTags(memo.tags.join(', '));
             setPageNumber(memo.pageNumber?.toString() || '');
             setQuote(memo.quote || '');
+            setDate(language === 'ko' ? format(memo.createdAt, 'yyyy. MM. dd.') : formatDateForInput(memo.createdAt));
             setIsEditing(shouldEdit);
         } else if (isNew) {
             setTitle('');
@@ -181,6 +214,7 @@ export const MemoDetail: React.FC = () => {
             const p = searchParams.get('page');
             setPageNumber(p || '');
             setQuote('');
+            setDate(language === 'ko' ? format(new Date(), 'yyyy. MM. dd.') : formatDateForInput(new Date()));
             setIsEditing(true);
         }
     }, [memo, isNew, searchParams]);
@@ -273,6 +307,21 @@ export const MemoDetail: React.FC = () => {
         }
 
         // Standard Memo Save Logic with finalTitle and finalType
+        let memoCreatedAt: Date;
+        if (language === 'ko' && /^\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.?$/.test(date)) {
+            const parts = date.split('.').map(s => s.trim()).filter(Boolean);
+            memoCreatedAt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            // Preserve time if possible
+            const oldDate = memo?.createdAt || new Date();
+            memoCreatedAt.setHours(oldDate.getHours(), oldDate.getMinutes(), oldDate.getSeconds());
+        } else {
+            memoCreatedAt = new Date(date + 'T' + format(memo?.createdAt || new Date(), 'HH:mm:ss'));
+        }
+
+        if (isNaN(memoCreatedAt.getTime())) {
+            memoCreatedAt = new Date();
+        }
+
         if (id) {
             await db.memos.update(Number(id), {
                 title: finalTitle,
@@ -280,6 +329,7 @@ export const MemoDetail: React.FC = () => {
                 tags: tagArray,
                 pageNumber: pNum,
                 quote,
+                createdAt: memoCreatedAt,
                 updatedAt: now,
                 type: finalType
             });
@@ -297,7 +347,7 @@ export const MemoDetail: React.FC = () => {
                 tags: tagArray,
                 pageNumber: pNum,
                 quote,
-                createdAt: now,
+                createdAt: memoCreatedAt,
                 updatedAt: now,
                 type: finalType
             });
@@ -354,28 +404,53 @@ export const MemoDetail: React.FC = () => {
                 <MetaRow>
                     {isEditing ? (
                         <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>Page:</span>
-                                <MetaInput
-                                    type="number"
-                                    value={pageNumber}
-                                    onChange={e => {
-                                        const val = e.target.value;
-                                        if (val === '') {
-                                            setPageNumber(val);
-                                            return;
-                                        }
-                                        const num = parseInt(val, 10);
-                                        if (book && book.totalPages && num > book.totalPages) {
-                                            return;
-                                        }
+                            <MetaInput
+                                type="number"
+                                value={pageNumber}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (val === '') {
                                         setPageNumber(val);
-                                    }}
-                                    placeholder="Page No."
+                                        return;
+                                    }
+                                    const num = parseInt(val, 10);
+                                    if (book && book.totalPages && num > book.totalPages) {
+                                        return;
+                                    }
+                                    setPageNumber(val);
+                                }}
+                                placeholder="Page"
+                            />
+
+                            <InputWrapper>
+                                <DateInput
+                                    type={language === 'ko' ? 'text' : 'date'}
+                                    value={date}
+                                    onChange={e => setDate(e.target.value)}
+                                    placeholder={language === 'ko' ? 'YYYY. MM. DD.' : undefined}
                                 />
-                            </div>
+                                <CalendarIconButton
+                                    onClick={() => {
+                                        const picker = document.getElementById('memo-date-picker');
+                                        if (picker) (picker as any).showPicker?.() || picker.click();
+                                    }}
+                                />
+                                <input
+                                    id="memo-date-picker"
+                                    type="date"
+                                    style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                                    onChange={(e) => {
+                                        const d = new Date(e.target.value);
+                                        if (!isNaN(d.getTime())) {
+                                            setDate(language === 'ko' ? format(d, 'yyyy. MM. dd.') : formatDateForInput(d));
+                                        }
+                                    }}
+                                />
+                            </InputWrapper>
+
                             <TagInput
                                 value={tags}
+                                style={{ flex: 1 }}
                                 onChange={e => setTags(e.target.value)}
                                 placeholder={t.memo_detail.tags_placeholder}
                             />

@@ -162,7 +162,7 @@ const AddButton = styled.button`
 
 export const CommentsSection: React.FC<{ memoId: number }> = ({ memoId }) => {
     const { theme } = useTheme();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const comments = useLiveQuery(
         () => db.comments.where('memoId').equals(memoId).sortBy('createdAt'),
         [memoId]
@@ -221,7 +221,7 @@ export const CommentsSection: React.FC<{ memoId: number }> = ({ memoId }) => {
                 {comments?.map(c => (
                     <CommentItem key={c.id}>
                         <CommentHeader>
-                            <span>{format(c.createdAt, 'MMM d, yyyy HH:mm')}</span>
+                            <span>{format(c.createdAt, language === 'ko' ? 'yyyy년 M월 d일 HH:mm' : 'MMM d, yyyy HH:mm')}</span>
                             <Actions>
                                 {editingId === c.id ? (
                                     <>

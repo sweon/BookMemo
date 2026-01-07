@@ -98,7 +98,13 @@ export const translations = {
             unknown_author: "Unknown Author",
             started: "Started",
             reset_zoom: "Reset Zoom",
-            zoom_back: "Zoom Back"
+            zoom_back: "Zoom Back",
+            title: "Book Title",
+            author_label: "Author (Optional)",
+            pages: "Total Pages",
+            register: "Register Book",
+            save_changes: "Save Changes",
+            add_new: "Add New Book"
         },
         comments: {
             title: "Comments",
@@ -242,7 +248,13 @@ export const translations = {
             unknown_author: "저자 미상",
             started: "시작일",
             reset_zoom: "전체 보기",
-            zoom_back: "이전 확대"
+            zoom_back: "이전 확대",
+            title: "책 제목",
+            author_label: "저자 (선택 사항)",
+            pages: "전체 페이지 수",
+            register: "책 등록",
+            save_changes: "변경사항 저장",
+            add_new: "새 책 추가"
         },
         comments: {
             title: "댓글",
