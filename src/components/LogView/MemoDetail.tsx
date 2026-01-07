@@ -218,8 +218,17 @@ export const MemoDetail: React.FC = () => {
                 finalTitle = "Progress Record";
                 finalType = 'progress';
             } else {
-                // Otherwise (has content, or page+content) -> Untitled
-                finalTitle = t.memo_detail.untitled;
+                // Determine title from content or quote
+                const contentText = content.trim();
+                const quoteText = quote.trim();
+
+                if (contentText) {
+                    finalTitle = contentText.slice(0, 30) + (contentText.length > 30 ? '...' : '');
+                } else if (quoteText) {
+                    finalTitle = quoteText.slice(0, 30) + (quoteText.length > 30 ? '...' : '');
+                } else {
+                    finalTitle = t.memo_detail.untitled;
+                }
                 finalType = 'normal';
             }
         } else {
