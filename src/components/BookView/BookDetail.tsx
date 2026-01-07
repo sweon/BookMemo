@@ -302,14 +302,10 @@ export const BookDetail: React.FC = () => {
       return { ...point, x: interpolatedX };
     });
 
-    // Process no-page memos: stack them from the left
-    // We use a fixed time offset (e.g., 12 hours) to separate them visually
-    const startTimeWidth = book.startDate.getTime();
-    const offsetStep = 12 * 60 * 60 * 1000; // 12 hours
-
-    const noPagePoints = noPageMemos.map((point, index) => ({
+    // Process no-page memos: simply place them at y=0 at their creation time
+    const noPagePoints = noPageMemos.map((point) => ({
       ...point,
-      x: startTimeWidth + (index + 1) * offsetStep,
+      // x is already set to createdAt in the initial mapping
       y: 0,
       yMain: null,
       yBacktrack: 0 // Use backtrack style (orange/blue dot) at y=0
@@ -634,12 +630,14 @@ export const BookDetail: React.FC = () => {
                     const { cx, cy, payload, index } = props;
                     if (payload.yBacktrack === null) return null;
                     const isFocused = focusedIndex === index;
+                    // Distinguish no-page memos (y=0) from actual backtrack memos
+                    const isNoPage = payload.y === 0;
                     return (
                       <circle
                         cx={cx}
                         cy={cy}
                         r={isFocused ? 8 : 5}
-                        fill={isFocused ? '#f59e0b' : '#f59e0b'}
+                        fill={isNoPage ? '#8b5cf6' : '#f59e0b'}
                         stroke={isFocused ? '#fff' : 'none'}
                         strokeWidth={isFocused ? 2 : 0}
                         style={{ cursor: 'pointer', zIndex: isFocused ? 20 : 1 }}
@@ -650,12 +648,13 @@ export const BookDetail: React.FC = () => {
                   activeDot={(props: any) => {
                     const { cx, cy, payload, index } = props;
                     const isFocused = focusedIndex === index;
+                    const isNoPage = payload.y === 0;
                     return (
                       <circle
                         cx={cx}
                         cy={cy}
                         r={isFocused ? 8 : 7}
-                        fill="#f59e0b"
+                        fill={isNoPage ? '#8b5cf6' : '#f59e0b'}
                         stroke="#fff"
                         strokeWidth={2}
                         style={{ cursor: 'pointer' }}
