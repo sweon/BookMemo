@@ -629,7 +629,7 @@ Please change the parent <Route path="${Z}"> to <Route path="${Z==="/"?"*":`${Z}
   padding: 2rem;
   border-radius: 16px;
   width: 90%;
-  max-width: 400px;
+  max-width: 500px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   border: 1px solid ${({theme:e})=>e.colors.border};
 `,pX=Wt.div`
