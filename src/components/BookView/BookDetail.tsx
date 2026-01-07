@@ -219,6 +219,7 @@ export const BookDetail: React.FC = () => {
   const [zoomDomain, setZoomDomain] = React.useState<[any, any] | null>(null);
   const [zoomHistory, setZoomHistory] = React.useState<[any, any][]>([]);
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
+  const lastMouseIndex = React.useRef<number | null>(null);
 
   const book = useLiveQuery(() => db.books.get(Number(id)), [id]);
   const memos = useLiveQuery(() =>
@@ -378,6 +379,7 @@ export const BookDetail: React.FC = () => {
   const handlePointClick = (data: any, index?: number) => {
     if (index !== undefined) {
       setFocusedIndex(index);
+      lastMouseIndex.current = index;
     }
 
     if (data.id) {
@@ -516,9 +518,18 @@ export const BookDetail: React.FC = () => {
                 onMouseDown={(e) => e && setRefAreaLeft(e.activeLabel)}
                 onMouseMove={(e) => {
                   if (refAreaLeft) setRefAreaRight(e?.activeLabel);
-                  if (e && e.activeTooltipIndex !== undefined) setFocusedIndex(e.activeTooltipIndex as number);
+                  if (e && e.activeTooltipIndex !== undefined) {
+                    const newIndex = e.activeTooltipIndex as number;
+                    if (newIndex !== lastMouseIndex.current) {
+                      setFocusedIndex(newIndex);
+                      lastMouseIndex.current = newIndex;
+                    }
+                  }
                 }}
-                onMouseLeave={() => setFocusedIndex(null)}
+                onMouseLeave={() => {
+                  setFocusedIndex(null);
+                  lastMouseIndex.current = null;
+                }}
                 onMouseUp={handleZoom}
                 style={{ cursor: 'crosshair' }}
               >
@@ -563,20 +574,18 @@ export const BookDetail: React.FC = () => {
                     const { cx, cy, payload, index } = props;
                     if (payload.yMain === null) return null;
 
-                    if (payload.type === 'start') {
-                      return <circle cx={cx} cy={cy} r={4} fill="#94a3b8" />;
-                    }
+                    const isStart = payload.type === 'start';
                     const isProgress = payload.type === 'progress';
                     const isFocused = focusedIndex === index;
                     return (
                       <circle
                         cx={cx}
                         cy={cy}
-                        r={isFocused ? 8 : 5}
-                        fill={isFocused ? '#f59e0b' : (isProgress ? '#22c55e' : '#2563eb')}
+                        r={isFocused ? 8 : (isStart ? 4 : 5)}
+                        fill={isFocused ? '#f59e0b' : (isStart ? '#94a3b8' : (isProgress ? '#22c55e' : '#2563eb'))}
                         stroke={isFocused ? '#fff' : 'none'}
                         strokeWidth={isFocused ? 2 : 0}
-                        style={{ cursor: isProgress ? 'default' : 'pointer', zIndex: isFocused ? 20 : 1 }}
+                        style={{ cursor: isProgress || isStart ? 'default' : 'pointer', zIndex: isFocused ? 20 : 1 }}
                         onClick={() => handlePointClick(payload, index)}
                       />
                     );
