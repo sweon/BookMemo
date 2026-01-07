@@ -1,15 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { exportData, importData } from '../utils/backup';
-import { FiTrash2, FiPlus, FiDownload, FiUpload, FiChevronRight, FiArrowLeft, FiDatabase, FiCpu, FiGlobe, FiInfo, FiShare2, FiAlertTriangle } from 'react-icons/fi';
-import { MdDragIndicator } from 'react-icons/md';
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import type { DropResult } from '@hello-pangea/dnd';
+import { FiTrash2, FiDownload, FiUpload, FiChevronRight, FiArrowLeft, FiDatabase, FiGlobe, FiInfo, FiShare2, FiAlertTriangle } from 'react-icons/fi';
 import { useLanguage } from '../contexts/LanguageContext';
 import { type Language } from '../translations';
-import { TouchDelayDraggable } from '../components/Sidebar/TouchDelayDraggable';
 
 const Container = styled.div`
   padding: 24px 32px;
@@ -133,43 +129,6 @@ const BackButton = styled.button`
   }
 `;
 
-const ModelList = styled.ul`
-  list-style: none;
-  padding: 0;
-`;
-
-const ModelItem = styled.li<{ $isDragging?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-  padding: 0.75rem;
-  background: ${({ theme, $isDragging }) => $isDragging ? theme.colors.border : theme.colors.surface};
-  border-radius: 8px;
-  border: 1px solid ${({ theme, $isDragging }) => $isDragging ? theme.colors.primary : 'transparent'};
-  box-shadow: ${({ $isDragging }) => $isDragging ? '0 5px 15px rgba(0,0,0,0.15)' : 'none'};
-  transition: background-color 0.2s, box-shadow 0.2s;
-`;
-
-const DragHandle = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  cursor: grab;
-  padding: 4px;
-  border-radius: 4px;
-  
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.background};
-    color: ${({ theme }) => theme.colors.text};
-  }
-
-  &:active {
-    cursor: grabbing;
-  }
-`;
-
 const Input = styled.input`
   flex: 1;
   padding: 0.75rem 1rem;
@@ -185,23 +144,6 @@ const Input = styled.input`
   }
 `;
 
-const IconButton = styled.button`
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  padding: 8px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-
-  &:hover { 
-    color: ${({ theme }) => theme.colors.danger};
-    background-color: ${({ theme }) => theme.colors.background};
-  }
-`;
 
 const ActionButton = styled.button<{ $variant?: 'primary' | 'success' | 'secondary' }>`
   display: flex;
@@ -372,30 +314,12 @@ const HelpList = styled.ul`
   }
 `;
 
-type SubMenu = 'main' | 'models' | 'data' | 'language' | 'about';
+type SubMenu = 'main' | 'data' | 'language' | 'about';
 
 export const SettingsPage: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const [currentSubMenu, setCurrentSubMenu] = useState<SubMenu>('main');
-  const models = useLiveQuery(() => db.models.orderBy('order').toArray());
 
-  useEffect(() => {
-    const initializeOrder = async () => {
-      const allModels = await db.models.toArray();
-      if (allModels.length > 0 && allModels.some(m => m.order === undefined)) {
-        await db.transaction('rw', db.models, async () => {
-          for (let i = 0; i < allModels.length; i++) {
-            if (allModels[i].order === undefined) {
-              await db.models.update(allModels[i].id!, { order: i });
-            }
-          }
-        });
-      }
-    };
-    initializeOrder();
-  }, []);
-
-  const [newModel, setNewModel] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [showExportModal, setShowExportModal] = useState(false);
@@ -425,47 +349,6 @@ export const SettingsPage: React.FC = () => {
     if (next.has(id)) next.delete(id);
     else next.add(id);
     setSelectedMemos(next);
-  };
-
-  const handleAddModel = async () => {
-    if (newModel.trim()) {
-      await db.transaction('rw', db.models, async () => {
-        const allModels = await db.models.orderBy('order').toArray();
-        for (const m of allModels) {
-          if (m.id !== undefined) {
-            await db.models.update(m.id, { order: (m.order ?? 0) + 1 });
-          }
-        }
-        await db.models.add({
-          name: newModel.trim(),
-          order: 0
-        });
-      });
-      setNewModel('');
-    }
-  };
-
-  const handleDeleteModel = async (id: number) => {
-    if (confirm(t.settings.delete_confirm)) {
-      await db.models.delete(id);
-    }
-  };
-
-  const onDragEnd = async (result: DropResult) => {
-    if (!result.destination || !models) return;
-    const sourceIndex = result.source.index;
-    const destIndex = result.destination.index;
-    if (sourceIndex === destIndex) return;
-    const newModels = Array.from(models);
-    const [removed] = newModels.splice(sourceIndex, 1);
-    newModels.splice(destIndex, 0, removed);
-    await db.transaction('rw', db.models, async () => {
-      for (let i = 0; i < newModels.length; i++) {
-        if (newModels[i].id !== undefined) {
-          await db.models.update(newModels[i].id!, { order: i });
-        }
-      }
-    });
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -533,15 +416,6 @@ export const SettingsPage: React.FC = () => {
         <Section>
           <Title style={{ marginBottom: '1.5rem' }}>{t.settings.title}</Title>
           <MenuList>
-            <MenuButton onClick={() => setCurrentSubMenu('models')}>
-              <div className="icon-wrapper"><FiCpu /></div>
-              <div className="label-wrapper">
-                <span className="title">{t.settings.manage_models}</span>
-                <span className="desc">Reorder or add LLM services</span>
-              </div>
-              <FiChevronRight className="chevron" />
-            </MenuButton>
-
             <MenuButton onClick={() => setCurrentSubMenu('data')}>
               <div className="icon-wrapper"><FiDatabase /></div>
               <div className="label-wrapper">
@@ -569,50 +443,6 @@ export const SettingsPage: React.FC = () => {
               <FiChevronRight className="chevron" />
             </MenuButton>
           </MenuList>
-        </Section>
-      )}
-
-      {currentSubMenu === 'models' && (
-        <Section>
-          {renderHeader(t.settings.manage_models)}
-          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Input
-              value={newModel}
-              onChange={e => setNewModel(e.target.value)}
-              placeholder={t.settings.add_model_placeholder}
-              onKeyDown={(e) => e.key === 'Enter' && newModel.trim() && handleAddModel()}
-            />
-            <ActionButton onClick={handleAddModel} disabled={!newModel.trim()}><FiPlus /> {t.settings.add}</ActionButton>
-          </div>
-
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="models">
-              {(provided) => (
-                <ModelList {...provided.droppableProps} ref={provided.innerRef}>
-                  {models?.map((m, index) => (
-                    <TouchDelayDraggable key={m.id} draggableId={m.id!.toString()} index={index}>
-                      {(provided, snapshot) => (
-                        <ModelItem
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          $isDragging={snapshot.isDragging}
-                        >
-                          <DragHandle {...provided.dragHandleProps}>
-                            <MdDragIndicator size={20} />
-                          </DragHandle>
-                          <span style={{ flex: 1, fontWeight: 500 }}>{m.name}</span>
-                          <IconButton onClick={() => handleDeleteModel(m.id!)}>
-                            <FiTrash2 size={18} />
-                          </IconButton>
-                        </ModelItem>
-                      )}
-                    </TouchDelayDraggable>
-                  ))}
-                  {provided.placeholder}
-                </ModelList>
-              )}
-            </Droppable>
-          </DragDropContext>
         </Section>
       )}
 
@@ -677,7 +507,6 @@ export const SettingsPage: React.FC = () => {
             <li>{t.settings.help_share_memo}</li>
             <li>{t.settings.help_backup}</li>
             <li>{t.settings.help_markdown}</li>
-            <li>{t.settings.help_models}</li>
             <li>{t.settings.help_tags}</li>
             <li>{t.settings.help_comments}</li>
             <li>{t.settings.help_math}</li>
@@ -697,7 +526,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--surface-color)', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
-            BookMemo v1.2.0 • Local-First Reading Tracker & Memo
+            BookMemo v1.2.1 • Local-First Reading Tracker & Memo
           </div>
         </Section>
       )}

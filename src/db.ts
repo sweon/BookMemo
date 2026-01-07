@@ -24,20 +24,12 @@ export interface Memo {
     quote?: string; // Selected text from book
     title: string;
     content: string; // Markdown content
-    modelId?: number; // Keep for legacy/compatibility
     tags: string[];
     createdAt: Date;
     updatedAt: Date;
     threadId?: string;
     threadOrder?: number;
     type?: 'normal' | 'progress';
-}
-
-export interface Model {
-    id?: number;
-    name: string;
-    isDefault?: boolean;
-    order?: number;
 }
 
 export interface Comment {
@@ -51,7 +43,6 @@ export interface Comment {
 export class BookMemoDatabase extends Dexie {
     books!: Table<Book>;
     memos!: Table<Memo>;
-    models!: Table<Model>;
     comments!: Table<Comment>;
 
     constructor() {
@@ -78,15 +69,13 @@ export class BookMemoDatabase extends Dexie {
         this.version(5).stores({
             memos: '++id, bookId, pageNumber, title, *tags, modelId, createdAt, updatedAt, threadId, type'
         });
+
+        this.version(6).stores({
+            memos: '++id, bookId, pageNumber, title, *tags, createdAt, updatedAt, threadId, type',
+            models: null // Delete the table
+        });
     }
 }
 
 export const db = new BookMemoDatabase();
-
-// Seed default model if not exists (Legacy support)
-db.on('populate', () => {
-    db.models.add({ name: 'GPT-4', isDefault: true });
-    db.models.add({ name: 'Claude 3.5 Sonnet' });
-    db.models.add({ name: 'Gemini 1.5 Pro' });
-});
 

@@ -8,7 +8,6 @@ interface Props {
     index: number;
     isActive: boolean;
     onClick?: () => void;
-    modelName?: string;
     formatDate: (date: Date) => string;
     inThread?: boolean;
     untitledText: string;
@@ -20,7 +19,6 @@ export const SidebarMemoItem: React.FC<Props> = ({
     index,
     isActive,
     onClick,
-    modelName,
     formatDate,
     inThread,
     untitledText,
@@ -56,11 +54,6 @@ export const SidebarMemoItem: React.FC<Props> = ({
                         </MemoTitle>
                         <MemoDate>
                             {formatDate(memo.createdAt)}
-                            {modelName && (
-                                <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>
-                                    • {modelName}
-                                </span>
-                            )}
                         </MemoDate>
                     </MemoItemLink>
                 </div>

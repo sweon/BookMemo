@@ -1,4 +1,4 @@
-# 🧠 LLMemo (Local LLM Memory)
+# 📖 BookMemo (Local Reading Tracker & Memo)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
@@ -6,16 +6,17 @@
 [![Dexie](https://img.shields.io/badge/Dexie.js-local--first-blue)](https://dexie.org/)
 [![PWA](https://img.shields.io/badge/PWA-Installable-hotpink)](https://web.dev/progressive-web-apps/)
 
-**LLMemo** is a Local-first Progressive Web App (PWA) designed to systematically log, manage, and store your LLM interaction results and knowledge. All data is kept securely within your own browser with threading support and seamless device-to-device synchronization.
+**BookMemo** is a Local-first Progressive Web App (PWA) designed to track your reading progress and store your book-related memos. All data is kept securely within your own browser with threading support and seamless device-to-device synchronization.
 
 ---
 
 ## ✨ Key Features
 
 ### 📂 Smart Organization
-- **Threads**: Group multiple logs into a single conversation thread using intuitive drag-and-drop.
-- **Smart Deletion**: When deleting a thread header, choose between deleting the entire thread or just the specific log.
-- **Tags**: Instantly find logs using tags or specific models (tag:tag or tag:model).
+- **Threads**: Group multiple memos into a single conversation thread using intuitive drag-and-drop.
+- **Smart Deletion**: When deleting a memo that belongs to a thread, choose between deleting the entire thread or just the specific memo.
+- **Tags**: Instantly find memos using tags (tag:tag).
+
 
 ### 🔄 Seamless Sync & Privacy
 - **Direct Peer-to-Peer Sync**: Synchronize your data directly between your own devices without relying on central servers, through a secure P2P mechanism.
@@ -37,8 +38,8 @@
 ### Installation
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/sweon/LLMemo.git
-    cd LLMemo
+    git clone https://github.com/sweon/BookMemo.git
+    cd BookMemo
     ```
 
 2.  **Install dependencies:**

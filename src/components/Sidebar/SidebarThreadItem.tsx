@@ -12,7 +12,6 @@ interface Props {
     collapsed: boolean;
     onToggle: (id: string) => void;
     activeMemoId?: number;
-    modelMap: Map<number, string>;
     formatDate: (d: Date) => string;
     untitledText: string;
     onMemoClick?: () => void;
@@ -22,7 +21,7 @@ interface Props {
 
 export const SidebarThreadItem: React.FC<Props> = ({
     threadId, memos, index, collapsed, onToggle,
-    activeMemoId, modelMap, formatDate, untitledText, onMemoClick,
+    activeMemoId, formatDate, untitledText, onMemoClick,
     isCombineTarget, t
 }) => {
     const headMemo = memos[0];
@@ -57,11 +56,6 @@ export const SidebarThreadItem: React.FC<Props> = ({
                             </MemoTitle>
                             <MemoDate>
                                 {formatDate(headMemo.createdAt)}
-                                {headMemo.modelId && (
-                                    <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>
-                                        • {modelMap.get(headMemo.modelId)}
-                                    </span>
-                                )}
                             </MemoDate>
                         </MemoItemLink>
 

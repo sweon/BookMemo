@@ -15,20 +15,17 @@ const downloadFile = (content: string, fileName: string, contentType: string) =>
 
 export const getBackupData = async (memoIds?: number[]) => {
     let memos = await db.memos.toArray();
-    const models = await db.models.toArray();
     let comments = await db.comments.toArray();
 
     if (memoIds && memoIds.length > 0) {
         memos = memos.filter(l => l.id !== undefined && memoIds.includes(l.id));
         comments = comments.filter(c => memoIds.includes(c.memoId));
-        // Keep all models to ensure references work, they are small anyway
     }
 
     return {
         version: 1,
         timestamp: new Date().toISOString(),
         memos,
-        models,
         comments
     };
 };
@@ -70,30 +67,13 @@ export const importData = async (file: File) => {
 };
 
 export const mergeBackupData = async (data: any) => {
-    if ((!data.memos && !data.logs) || !data.models) {
+    if (!data.memos && !data.logs) {
         throw new Error('Invalid backup file format');
     }
 
     const memos = data.memos || data.logs; // Support legacy migration if needed, but primarily memos
 
-    await db.transaction('rw', db.memos, db.models, db.comments, async () => {
-        const modelIdMap = new Map<number, number>();
-
-        for (const m of data.models) {
-            const oldId = m.id;
-            const existing = await db.models.where('name').equals(m.name).first();
-
-            if (existing) {
-                modelIdMap.set(oldId, existing.id!);
-            } else {
-                // Ensure we don't try to add with an ID if it's auto-increment, though we should strip it
-                // Actually, let's just strip ID to be safe and let Dexie assign
-                const { id, ...modelData } = m;
-                const newId = await db.models.add(modelData);
-                modelIdMap.set(oldId, newId as number);
-            }
-        }
-
+    await db.transaction('rw', db.memos, db.comments, async () => {
         const memoIdMap = new Map<number, number>();
 
         for (const l of memos) {
@@ -122,13 +102,6 @@ export const mergeBackupData = async (data: any) => {
                 memoData.createdAt = createdAt;
                 memoData.updatedAt = typeof l.updatedAt === 'string' ? new Date(l.updatedAt) : l.updatedAt;
 
-                if (memoData.modelId !== undefined) {
-                    if (modelIdMap.has(memoData.modelId)) {
-                        memoData.modelId = modelIdMap.get(memoData.modelId);
-                    } else {
-                        memoData.modelId = undefined;
-                    }
-                }
                 const newId = await db.memos.add(memoData);
                 memoIdMap.set(oldId, newId as number);
             }
