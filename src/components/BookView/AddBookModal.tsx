@@ -24,7 +24,7 @@ const Modal = styled.div`
   padding: 2rem;
   border-radius: 16px;
   width: 90%;
-  max-width: 400px;
+  max-width: 500px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   border: 1px solid ${({ theme }) => theme.colors.border};
 `;
