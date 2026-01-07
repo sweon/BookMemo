@@ -82,7 +82,7 @@ const DateInput = styled.input`
     color: ${({ theme }) => theme.colors.text};
     padding: 0.25rem 2.2rem 0.25rem 0.5rem;
     border-radius: 4px;
-    width: 190px;
+    width: 210px;
 `;
 
 const InputWrapper = styled.div`
