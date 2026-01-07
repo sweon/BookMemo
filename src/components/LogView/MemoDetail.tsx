@@ -433,14 +433,19 @@ export const MemoDetail: React.FC = () => {
                                 <FiSave /> {t.memo_detail.save}
                             </ActionButton>
                             {!isNew && (
-                                <ActionButton onClick={() => {
-                                    if (searchParams.get('edit')) {
-                                        navigate(`/memo/${id}`, { replace: true });
-                                    }
-                                    setIsEditing(false);
-                                }}>
-                                    <FiX /> {t.memo_detail.cancel}
-                                </ActionButton>
+                                <>
+                                    <ActionButton $variant="danger" onClick={handleDelete}>
+                                        <FiTrash2 /> {t.memo_detail.delete}
+                                    </ActionButton>
+                                    <ActionButton onClick={() => {
+                                        if (searchParams.get('edit')) {
+                                            navigate(`/memo/${id}`, { replace: true });
+                                        }
+                                        setIsEditing(false);
+                                    }}>
+                                        <FiX /> {t.memo_detail.cancel}
+                                    </ActionButton>
+                                </>
                             )}
                         </>
                     ) : (
