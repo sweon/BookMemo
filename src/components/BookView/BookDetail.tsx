@@ -31,6 +31,10 @@ const Header = styled.div`
   padding: 1rem 2rem 2rem 2rem;
   background: ${({ theme }) => theme.colors.surface};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+
+  @media (max-width: 768px) {
+    padding: 1rem 0.5rem 1.5rem 0.5rem;
+  }
 `;
 
 const BookTitle = styled.h1`
@@ -89,6 +93,12 @@ const GraphContainer = styled.div`
   -ms-user-select: none;
   outline: none;
   
+  @media (max-width: 768px) {
+    height: 300px;
+    padding-right: 10px;
+    margin-top: 1rem;
+  }
+
   & .recharts-wrapper {
     outline: none;
   }
@@ -527,7 +537,10 @@ export const BookDetail: React.FC = () => {
             )}
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
-                margin={{ top: 20, right: 20, bottom: 60, left: 0 }}
+                margin={window.innerWidth <= 768
+                  ? { top: 10, right: 5, bottom: 40, left: -25 }
+                  : { top: 20, right: 20, bottom: 60, left: 0 }
+                }
                 data={allChartData}
                 {...({ activeTooltipIndex: focusedIndex ?? undefined } as any)}
                 onMouseDown={(e) => e && setRefAreaLeft(e.activeLabel)}
