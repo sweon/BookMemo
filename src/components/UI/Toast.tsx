@@ -34,7 +34,9 @@ const ToastContainer = styled.div<{ $variant?: 'default' | 'warning' | 'danger';
   font-weight: 600;
   z-index: 10000;
   pointer-events: none;
-  white-space: nowrap;
+  text-align: center;
+  white-space: pre-line;
+  max-width: 80vw;
   animation: ${fadeInOut} 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards,
              ${({ $variant }) => $variant === 'warning' ? pulse : 'none'} 1.5s ease-in-out infinite;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);

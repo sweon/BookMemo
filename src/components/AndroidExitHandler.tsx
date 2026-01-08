@@ -55,7 +55,7 @@ export const AndroidExitHandler: React.FC = () => {
             variant="warning"
             position="left-centered"
             icon={<FiAlertTriangle size={14} />}
-            message="뒤로 가기 버튼을 한 번 더 누르면 종료됩니다."
+            message={"뒤로 가기 버튼을\n한 번 더 누르면 종료됩니다."}
             onClose={() => setShowExitToast(false)}
         />
     );
