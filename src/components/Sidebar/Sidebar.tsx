@@ -38,6 +38,7 @@ const SidebarContainer = styled.div`
 const Header = styled.div`
   padding: 0.5rem 1rem;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  overflow: hidden;
 
   @media (max-width: 768px) {
     padding: 0.5rem 0.75rem;
@@ -113,6 +114,9 @@ const Button = styled.button`
   font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
   
   &:hover {
     background: ${({ theme }) => theme.colors.primaryHover};
@@ -120,7 +124,8 @@ const Button = styled.button`
 
   @media (max-width: 768px) {
     padding: 6px 10px;
-    font-size: 14px;
+    font-size: 14px !important;
+    max-height: 36px;
   }
 `;
 
@@ -130,9 +135,12 @@ const TopActions = styled.div`
   justify-content: space-between;
   gap: 0.25rem;
   margin-bottom: 0.5rem;
+  overflow: hidden;
 
   @media (max-width: 768px) {
-    gap: 4px;
+    gap: 2px;
+    flex-wrap: nowrap;
+    max-height: 44px;
   }
 `;
 
@@ -170,6 +178,7 @@ const IconButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   
   &:hover {
     background: ${({ theme }) => theme.colors.border};
@@ -178,6 +187,16 @@ const IconButton = styled.button`
 
   @media (max-width: 768px) {
     padding: 4px;
+    /* Limit icon button size on mobile regardless of font size */
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px;
+    max-height: 32px;
+    
+    svg {
+      width: 18px !important;
+      height: 18px !important;
+    }
   }
 `;
 
