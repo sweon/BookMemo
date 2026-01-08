@@ -38,6 +38,10 @@ const SidebarContainer = styled.div`
 const Header = styled.div`
   padding: 0.5rem 1rem;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+
+  @media (max-width: 768px) {
+    padding: 0.5rem 0.75rem;
+  }
 `;
 
 const SearchInputWrapper = styled.div`
@@ -64,6 +68,11 @@ const SearchInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.primary};
+  }
+
+  @media (max-width: 768px) {
+    padding: 8px 32px 8px 32px;
+    font-size: 14px;
   }
 `;
 
@@ -108,6 +117,11 @@ const Button = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.primaryHover};
   }
+
+  @media (max-width: 768px) {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
 `;
 
 const TopActions = styled.div`
@@ -116,6 +130,10 @@ const TopActions = styled.div`
   justify-content: space-between;
   gap: 0.25rem;
   margin-bottom: 0.5rem;
+
+  @media (max-width: 768px) {
+    gap: 4px;
+  }
 `;
 
 const BookList = styled.div`
@@ -157,6 +175,10 @@ const IconButton = styled.button`
     background: ${({ theme }) => theme.colors.border};
     color: ${({ theme }) => theme.colors.text};
   }
+
+  @media (max-width: 768px) {
+    padding: 4px;
+  }
 `;
 
 interface SidebarProps {
@@ -175,6 +197,10 @@ const AppTitle = styled.div`
   font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
   letter-spacing: -0.02em;
+
+  @media (max-width: 768px) {
+    font-size: 18px;
+  }
 `;
 
 const AppVersion = styled.span`
@@ -421,7 +447,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             onChange={(e) => setSortBy(e.target.value as any)}
             style={{
               flex: 1,
-              padding: '0.5rem',
+              padding: window.innerWidth <= 768 ? '8px' : '0.5rem',
+              fontSize: window.innerWidth <= 768 ? '14px' : 'inherit',
               borderRadius: '6px',
               border: `1px solid ${theme.colors.border}`,
               background: theme.colors.surface,
