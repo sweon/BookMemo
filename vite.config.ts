@@ -9,6 +9,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
+      // Disable automatic update checking - updates only when user manually checks
+      selfDestroying: false,
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'BookMemo',
@@ -29,7 +31,10 @@ export default defineConfig({
         ]
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5000000 // 5MB
+        maximumFileSizeToCacheInBytes: 5000000, // 5MB
+        // Disable automatic updates on navigation
+        skipWaiting: false,
+        clientsClaim: false
       }
     })
   ],

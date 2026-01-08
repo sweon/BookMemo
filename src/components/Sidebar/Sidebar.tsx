@@ -231,6 +231,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
+    // No automatic update interval - updates only when user manually checks
+    immediate: false,
     onRegistered(r) {
       console.log('SW Registered: ' + r)
     },
