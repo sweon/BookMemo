@@ -46,15 +46,18 @@ const ContentWrapper = styled.div`
   position: relative;
 `;
 
-const ResizeHandle = styled.div<{ $isResizing: boolean }>`
+const ResizeHandle = styled.div<{ $isResizing: boolean; $isVisible: boolean }>`
   width: 4px;
   cursor: col-resize;
   background: ${({ $isResizing, theme }) => $isResizing ? theme.colors.primary : 'transparent'};
   transition: background 0.2s;
   z-index: 15;
-  margin-left: -2px;
-  position: relative;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
   touch-action: none;
+  display: ${({ $isVisible }) => ($isVisible ? 'block' : 'none')};
 
   &::after {
     content: '';
@@ -72,10 +75,6 @@ const ResizeHandle = styled.div<{ $isResizing: boolean }>`
 
   @media (max-width: 768px) {
     z-index: 20;
-    position: fixed;
-    height: 100%;
-    /* Only show handle when it's being used or sidebar is open on mobile */
-    left: var(--sidebar-x, 0px);
   }
 `;
 
@@ -119,8 +118,16 @@ export const MainLayout: React.FC = () => {
     return Math.max(MIN_WIDTH, parsed);
   });
   const [isResizing, setIsResizing] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const containerRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<any>(null);
+
+  // Track mobile state
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const startResizing = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if ('touches' in e) {
@@ -182,23 +189,24 @@ export const MainLayout: React.FC = () => {
     };
   }, [isResizing, handleMouseMove, handleTouchMove, stopResizing]);
 
-  // CSS Variable to sync handle position on mobile
-  useEffect(() => {
-    document.documentElement.style.setProperty('--sidebar-x', `${sidebarWidth}px`);
-  }, [sidebarWidth]);
+  // Resize handle is visible:
+  // - Desktop: always visible
+  // - Mobile: only when sidebar is open
+  const isResizeHandleVisible = !isMobile || isSidebarOpen;
 
   return (
     <Container ref={containerRef} $isResizing={isResizing}>
       <Overlay $isOpen={isSidebarOpen} onClick={() => setSidebarOpen(false)} />
       <SidebarWrapper $isOpen={isSidebarOpen} $width={sidebarWidth}>
         <Sidebar onCloseMobile={() => setSidebarOpen(false)} />
+        <ResizeHandle
+          $isResizing={isResizing}
+          $isVisible={isResizeHandleVisible}
+          onMouseDown={startResizing}
+          onTouchStart={startResizing}
+          onTouchEnd={stopResizing}
+        />
       </SidebarWrapper>
-      <ResizeHandle
-        $isResizing={isResizing}
-        onMouseDown={startResizing}
-        onTouchStart={startResizing}
-        onTouchEnd={stopResizing}
-      />
       <ContentWrapper>
         <MobileHeader>
           {!isSidebarOpen && <FiMenu size={24} onClick={() => setSidebarOpen(true)} />}
