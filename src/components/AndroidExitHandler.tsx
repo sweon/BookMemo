@@ -10,25 +10,33 @@ export const AndroidExitHandler: React.FC = () => {
     const isAtRoot = location.pathname === '/' || location.pathname === '';
 
     useEffect(() => {
-        // We only care about the back button at the root of the app
+        // Only run logic on Android/Touch devices for better behavior
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (!isTouchDevice) return;
+
         if (!isAtRoot) return;
 
         // Push a state so we can intercept the next back button
+        // We use a specific state object to identify our dummy state
         window.history.pushState({ noExit: true }, '');
 
         const handlePopState = () => {
-            // At root logic
+            // If the state we are popping to is NOT our dummy state, 
+            // it means we just intercepted a back button.
             const now = Date.now();
             const timeDiff = now - lastPressTime.current;
 
             if (timeDiff < 2000) {
-                // Second press: allow exit
+                // Second press: we allow the exit by not pushing state again
+                // and calling back once more if needed, or just let it be.
+                // To truly "exit", we go back one more time to skip the root entry
                 window.history.back();
             } else {
                 // First press: prevent exit and show warning
                 lastPressTime.current = now;
                 setShowExitToast(true);
-                // Re-push the state to stay on the page
+
+                // Re-push the state to stay on the page and keep intercepting
                 window.history.pushState({ noExit: true }, '');
             }
         };
@@ -37,6 +45,8 @@ export const AndroidExitHandler: React.FC = () => {
 
         return () => {
             window.removeEventListener('popstate', handlePopState);
+            // Clean up the dummy state if we navigate away from root
+            // (though popstate handler usually handles this by being removed)
         };
     }, [isAtRoot]);
 
