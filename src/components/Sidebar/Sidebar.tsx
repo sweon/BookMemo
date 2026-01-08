@@ -191,7 +191,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'last-memo-desc' | 'last-comment-desc'>('date-desc');
   const [isAddBookModalOpen, setIsAddBookModalOpen] = useState(false);
 
-  const { mode, toggleTheme, increaseFontSize, decreaseFontSize } = useTheme();
+  const { mode, toggleTheme, increaseFontSize, decreaseFontSize, theme } = useTheme();
   const navigate = useNavigate();
 
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -414,9 +414,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               flex: 1,
               padding: '0.5rem',
               borderRadius: '6px',
-              border: '1px solid #e5e7eb',
-              background: mode === 'dark' ? '#1e293b' : '#fff',
-              color: mode === 'dark' ? '#f8fafc' : '#111827'
+              border: `1px solid ${theme.colors.border}`,
+              background: theme.colors.surface,
+              color: theme.colors.text
             }}
           >
             <option value="date-desc">{t.sidebar.newest}</option>

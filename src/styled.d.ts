@@ -4,6 +4,7 @@ declare module 'styled-components' {
     export interface DefaultTheme {
         mode: 'light' | 'dark';
         fontSize: number;
+        themeName: string;
         colors: {
             background: string;
             surface: string;

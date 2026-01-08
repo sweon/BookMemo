@@ -3,8 +3,10 @@ import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { exportData, importData } from '../utils/backup';
-import { FiTrash2, FiDownload, FiUpload, FiChevronRight, FiArrowLeft, FiDatabase, FiGlobe, FiInfo, FiShare2, FiAlertTriangle } from 'react-icons/fi';
+import { FiTrash2, FiDownload, FiUpload, FiChevronRight, FiArrowLeft, FiDatabase, FiGlobe, FiInfo, FiShare2, FiAlertTriangle, FiLayout } from 'react-icons/fi';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { themePresets } from '../theme';
 import { type Language } from '../translations';
 
 const Container = styled.div`
@@ -314,10 +316,11 @@ const HelpList = styled.ul`
   }
 `;
 
-type SubMenu = 'main' | 'data' | 'language' | 'about';
+type SubMenu = 'main' | 'data' | 'language' | 'about' | 'theme';
 
 export const SettingsPage: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
+  const { theme, setThemeByName } = useTheme();
   const [currentSubMenu, setCurrentSubMenu] = useState<SubMenu>('main');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -425,6 +428,15 @@ export const SettingsPage: React.FC = () => {
               <FiChevronRight className="chevron" />
             </MenuButton>
 
+            <MenuButton onClick={() => setCurrentSubMenu('theme')}>
+              <div className="icon-wrapper"><FiLayout /></div>
+              <div className="label-wrapper">
+                <span className="title">{t.settings.theme_selection}</span>
+                <span className="desc">{t.settings.theme_desc}</span>
+              </div>
+              <FiChevronRight className="chevron" />
+            </MenuButton>
+
             <MenuButton onClick={() => setCurrentSubMenu('language')}>
               <div className="icon-wrapper"><FiGlobe /></div>
               <div className="label-wrapper">
@@ -478,6 +490,92 @@ export const SettingsPage: React.FC = () => {
                 <FiTrash2 /> {t.settings.factory_reset}
               </ActionButton>
             </div>
+          </div>
+        </Section>
+      )}
+
+      {currentSubMenu === 'theme' && (
+        <Section>
+          {renderHeader(t.settings.theme_selection)}
+
+          <h4 style={{ marginBottom: '1rem', opacity: 0.8 }}>Light Modes</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+            {Object.entries(themePresets).filter(([_, p]) => p.mode === 'light').map(([name, preset]) => (
+              <div
+                key={name}
+                onClick={() => setThemeByName(name)}
+                style={{
+                  padding: '1rem',
+                  background: preset.surface,
+                  borderRadius: '12px',
+                  border: `2px solid ${theme.themeName === name ? theme.colors.primary : preset.border}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{
+                  width: '100%',
+                  height: '40px',
+                  background: preset.background,
+                  borderRadius: '6px',
+                  display: 'flex',
+                  padding: '4px',
+                  gap: '4px'
+                }}>
+                  <div style={{ flex: 1, background: preset.primary, borderRadius: '3px' }} />
+                  <div style={{ flex: 1, background: preset.textSecondary, borderRadius: '3px', opacity: 0.5 }} />
+                </div>
+                <span style={{
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: preset.text
+                }}>{name}</span>
+              </div>
+            ))}
+          </div>
+
+          <h4 style={{ marginBottom: '1rem', opacity: 0.8 }}>Dark Modes</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+            {Object.entries(themePresets).filter(([_, p]) => p.mode === 'dark').map(([name, preset]) => (
+              <div
+                key={name}
+                onClick={() => setThemeByName(name)}
+                style={{
+                  padding: '1rem',
+                  background: preset.surface,
+                  borderRadius: '12px',
+                  border: `2px solid ${theme.themeName === name ? theme.colors.primary : preset.border}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{
+                  width: '100%',
+                  height: '40px',
+                  background: preset.background,
+                  borderRadius: '6px',
+                  display: 'flex',
+                  padding: '4px',
+                  gap: '4px'
+                }}>
+                  <div style={{ flex: 1, background: preset.primary, borderRadius: '3px' }} />
+                  <div style={{ flex: 1, background: preset.textSecondary, borderRadius: '3px', opacity: 0.5 }} />
+                </div>
+                <span style={{
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: preset.text
+                }}>{name}</span>
+              </div>
+            ))}
           </div>
         </Section>
       )}

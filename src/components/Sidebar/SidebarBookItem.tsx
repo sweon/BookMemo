@@ -7,6 +7,7 @@ import { MemoItemLink, MemoTitle, MemoDate, ThreadToggleBtn } from './itemStyles
 import { format } from 'date-fns';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useSearch } from '../../contexts/SearchContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const GroupContainer = styled.div`
   margin-bottom: 0.5rem;
@@ -30,9 +31,9 @@ const ItemContainer = styled(NavLink) <{ $isActive?: boolean }>`
   }
 
   &.active {
-    background: ${({ theme }) => theme.colors.surface};
-    border-color: ${({ theme }) => theme.colors.border};
-    font-weight: 500;
+    background: ${({ theme }) => `${theme.colors.primary}20`};
+    border-color: ${({ theme }) => theme.colors.primary};
+    font-weight: 600;
   }
 `;
 
@@ -85,6 +86,7 @@ export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick }) => {
   const { id: activeId, memoId: activeMemoId } = useParams();
   const { t, language } = useLanguage();
   const { searchQuery } = useSearch();
+  const { theme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   const progressPercent = book.totalPages > 0
@@ -158,7 +160,7 @@ export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick }) => {
                 $isActive={activeMemoId === String(memo.id)}
                 $inThread={true}
                 onClick={onClick}
-                style={isMatch ? { borderRight: '2px solid #3b82f6' } : {}}
+                style={isMatch ? { borderRight: `2px solid ${theme.colors.primary}` } : {}}
               >
                 <MemoTitle title={memo.title || t.sidebar.untitled}>
                   {memo.title || t.sidebar.untitled}
