@@ -749,7 +749,7 @@ Please change the parent <Route path="${Z}"> to <Route path="${Z==="/"?"*":`${Z}
     font-size: 1.2rem;
     stroke-width: 2.5;
   }
-`,aA=e=>{const t=e.getFullYear(),n=String(e.getMonth()+1).padStart(2,"0"),r=String(e.getDate()).padStart(2,"0");return`${t}-${n}-${r}`},G_=({onClose:e,editTarget:t})=>{const{t:n,language:r}=Of(),[i,a]=ne.useState(t?.title||""),[l,h]=ne.useState(t?.author||""),[f,g]=ne.useState(t?.totalPages?.toString()||""),[y,b]=ne.useState(t?.startDate?r==="ko"?Vc(new Date(t.startDate),"yyyy. MM. dd."):aA(new Date(t.startDate)):r==="ko"?Vc(new Date,"yyyy. MM. dd."):aA(new Date)),O=async N=>{if(N.preventDefault(),!i.trim()||!f)return;let B;if(r==="ko"&&/^\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.?$/.test(y)){const j=y.split(".").map(G=>G.trim()).filter(Boolean);B=new Date(parseInt(j[0]),parseInt(j[1])-1,parseInt(j[2]))}else B=new Date(y+"T00:00:00");isNaN(B.getTime())&&(B=new Date);try{t?await Gr.books.update(t.id,{title:i.trim(),author:l.trim(),totalPages:parseInt(f,10),startDate:B,updatedAt:new Date}):await Gr.books.add({title:i.trim(),author:l.trim(),totalPages:parseInt(f,10),status:"reading",startDate:B,createdAt:new Date,updatedAt:new Date}),e()}catch(j){console.error("Failed to save book:",j),alert("Failed to save book")}};return pe.jsx(mX,{onClick:e,children:pe.jsxs(vX,{onClick:N=>N.stopPropagation(),children:[pe.jsxs(yX,{children:[pe.jsx("h3",{children:t?n.book_detail.edit_book:n.book_detail.add_new}),pe.jsx(xX,{onClick:e,children:pe.jsx(gm,{size:20})})]}),pe.jsxs(bX,{onSubmit:O,children:[pe.jsxs(vv,{children:[pe.jsx(yv,{children:n.book_detail.title}),pe.jsx(xv,{value:i,onChange:N=>a(N.target.value),placeholder:n.book_detail.title,required:!0,autoFocus:!0})]}),pe.jsxs(vv,{children:[pe.jsx(yv,{children:n.book_detail.author_label}),pe.jsx(xv,{value:l,onChange:N=>h(N.target.value),placeholder:n.book_detail.author_label})]}),pe.jsxs(vv,{children:[pe.jsx(yv,{children:n.book_detail.pages}),pe.jsx(xv,{type:"number",value:f,onChange:N=>g(N.target.value),placeholder:n.book_detail.pages,required:!0,min:"1"})]}),pe.jsxs(vv,{children:[pe.jsx(yv,{children:n.book_detail.started}),pe.jsxs(wX,{children:[pe.jsx(xv,{type:r==="ko"?"text":"date",value:y,onChange:N=>b(N.target.value),placeholder:r==="ko"?"YYYY. MM. DD.":void 0,required:!0}),pe.jsx(SX,{onClick:()=>{const N=document.getElementById("hidden-date-picker");N&&(N.showPicker?.()||N.click())},style:{cursor:"pointer",pointerEvents:"auto"}}),r==="ko"&&pe.jsx("input",{id:"hidden-date-picker",type:"date",style:{position:"absolute",opacity:0,width:0,height:0,padding:0,border:"none"},onChange:N=>{const B=new Date(N.target.value);isNaN(B.getTime())||b(Vc(B,"yyyy. MM. dd."))}})]})]}),pe.jsxs(CX,{type:"submit",children:[pe.jsx(lW,{})," ",t?n.book_detail.save_changes:n.book_detail.register]})]})]})})},AX="1.3.7",EX={version:AX},TX=Wt.div`
+`,aA=e=>{const t=e.getFullYear(),n=String(e.getMonth()+1).padStart(2,"0"),r=String(e.getDate()).padStart(2,"0");return`${t}-${n}-${r}`},G_=({onClose:e,editTarget:t})=>{const{t:n,language:r}=Of(),[i,a]=ne.useState(t?.title||""),[l,h]=ne.useState(t?.author||""),[f,g]=ne.useState(t?.totalPages?.toString()||""),[y,b]=ne.useState(t?.startDate?r==="ko"?Vc(new Date(t.startDate),"yyyy. MM. dd."):aA(new Date(t.startDate)):r==="ko"?Vc(new Date,"yyyy. MM. dd."):aA(new Date)),O=async N=>{if(N.preventDefault(),!i.trim()||!f)return;let B;if(r==="ko"&&/^\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.?$/.test(y)){const j=y.split(".").map(G=>G.trim()).filter(Boolean);B=new Date(parseInt(j[0]),parseInt(j[1])-1,parseInt(j[2]))}else B=new Date(y+"T00:00:00");isNaN(B.getTime())&&(B=new Date);try{t?await Gr.books.update(t.id,{title:i.trim(),author:l.trim(),totalPages:parseInt(f,10),startDate:B,updatedAt:new Date}):await Gr.books.add({title:i.trim(),author:l.trim(),totalPages:parseInt(f,10),status:"reading",startDate:B,createdAt:new Date,updatedAt:new Date}),e()}catch(j){console.error("Failed to save book:",j),alert("Failed to save book")}};return pe.jsx(mX,{onClick:e,children:pe.jsxs(vX,{onClick:N=>N.stopPropagation(),children:[pe.jsxs(yX,{children:[pe.jsx("h3",{children:t?n.book_detail.edit_book:n.book_detail.add_new}),pe.jsx(xX,{onClick:e,children:pe.jsx(gm,{size:20})})]}),pe.jsxs(bX,{onSubmit:O,children:[pe.jsxs(vv,{children:[pe.jsx(yv,{children:n.book_detail.title}),pe.jsx(xv,{value:i,onChange:N=>a(N.target.value),placeholder:n.book_detail.title,required:!0,autoFocus:!0})]}),pe.jsxs(vv,{children:[pe.jsx(yv,{children:n.book_detail.author_label}),pe.jsx(xv,{value:l,onChange:N=>h(N.target.value),placeholder:n.book_detail.author_label})]}),pe.jsxs(vv,{children:[pe.jsx(yv,{children:n.book_detail.pages}),pe.jsx(xv,{type:"number",value:f,onChange:N=>g(N.target.value),placeholder:n.book_detail.pages,required:!0,min:"1"})]}),pe.jsxs(vv,{children:[pe.jsx(yv,{children:n.book_detail.started}),pe.jsxs(wX,{children:[pe.jsx(xv,{type:r==="ko"?"text":"date",value:y,onChange:N=>b(N.target.value),placeholder:r==="ko"?"YYYY. MM. DD.":void 0,required:!0}),pe.jsx(SX,{onClick:()=>{const N=document.getElementById("hidden-date-picker");N&&(N.showPicker?.()||N.click())},style:{cursor:"pointer",pointerEvents:"auto"}}),r==="ko"&&pe.jsx("input",{id:"hidden-date-picker",type:"date",style:{position:"absolute",opacity:0,width:0,height:0,padding:0,border:"none"},onChange:N=>{const B=new Date(N.target.value);isNaN(B.getTime())||b(Vc(B,"yyyy. MM. dd."))}})]})]}),pe.jsxs(CX,{type:"submit",children:[pe.jsx(lW,{})," ",t?n.book_detail.save_changes:n.book_detail.register]})]})]})})},AX="1.3.8",EX={version:AX},TX=Wt.div`
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -769,6 +769,7 @@ Please change the parent <Route path="${Z}"> to <Route path="${Z==="/"?"*":`${Z}
 `,kX=Wt.div`
   padding: 0.5rem 1rem;
   border-bottom: 1px solid ${({theme:e})=>e.colors.border};
+  overflow: hidden;
 
   @media (max-width: 768px) {
     padding: 0.5rem 0.75rem;
@@ -832,6 +833,9 @@ Please change the parent <Route path="${Z}"> to <Route path="${Z==="/"?"*":`${Z}
   font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
   
   &:hover {
     background: ${({theme:e})=>e.colors.primaryHover};
@@ -839,7 +843,8 @@ Please change the parent <Route path="${Z}"> to <Route path="${Z==="/"?"*":`${Z}
 
   @media (max-width: 768px) {
     padding: 6px 10px;
-    font-size: 14px;
+    font-size: 14px !important;
+    max-height: 36px;
   }
 `,RX=Wt.div`
   display: flex;
@@ -847,9 +852,12 @@ Please change the parent <Route path="${Z}"> to <Route path="${Z==="/"?"*":`${Z}
   justify-content: space-between;
   gap: 0.25rem;
   margin-bottom: 0.5rem;
+  overflow: hidden;
 
   @media (max-width: 768px) {
-    gap: 4px;
+    gap: 2px;
+    flex-wrap: nowrap;
+    max-height: 44px;
   }
 `,NX=Wt.div`
   flex: 1;
@@ -883,6 +891,7 @@ Please change the parent <Route path="${Z}"> to <Route path="${Z==="/"?"*":`${Z}
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   
   &:hover {
     background: ${({theme:e})=>e.colors.border};
@@ -891,6 +900,16 @@ Please change the parent <Route path="${Z}"> to <Route path="${Z==="/"?"*":`${Z}
 
   @media (max-width: 768px) {
     padding: 4px;
+    /* Limit icon button size on mobile regardless of font size */
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px;
+    max-height: 32px;
+    
+    svg {
+      width: 18px !important;
+      height: 18px !important;
+    }
   }
 `,LX=Wt.div`
   display: flex;
