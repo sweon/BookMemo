@@ -197,6 +197,34 @@ export const MainLayout: React.FC = () => {
     };
   }, [isResizing, handleMouseMove, handleTouchMove, stopResizing]);
 
+  // Handle sidebar toggle with history on mobile
+  const toggleSidebar = useCallback((open: boolean) => {
+    setSidebarOpen(open);
+    if (isMobile) {
+      if (open) {
+        // Push a state when opening so back button can close it
+        window.history.pushState({ sidebar: true, isGuard: true }, '');
+      } else {
+        // If closing manually and we have the sidebar state, go back
+        if (window.history.state?.sidebar) {
+          window.history.back();
+        }
+      }
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      // If we are on mobile, sidebar is open, but the new state doesn't have it
+      // then close the sidebar.
+      if (isMobile && isSidebarOpen && !e.state?.sidebar) {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isMobile, isSidebarOpen]);
+
   // Resize handle is visible:
   // - Desktop: always visible
   // - Mobile: only when sidebar is open
@@ -204,9 +232,9 @@ export const MainLayout: React.FC = () => {
 
   return (
     <Container ref={containerRef} $isResizing={isResizing}>
-      <Overlay $isOpen={isSidebarOpen} onClick={() => setSidebarOpen(false)} />
+      <Overlay $isOpen={isSidebarOpen} onClick={() => toggleSidebar(false)} />
       <SidebarWrapper $isOpen={isSidebarOpen} $width={sidebarWidth}>
-        <Sidebar onCloseMobile={() => setSidebarOpen(false)} />
+        <Sidebar onCloseMobile={() => toggleSidebar(false)} />
         <ResizeHandle
           $isResizing={isResizing}
           $isVisible={isResizeHandleVisible}
@@ -217,7 +245,7 @@ export const MainLayout: React.FC = () => {
       </SidebarWrapper>
       <ContentWrapper>
         <MobileHeader>
-          {!isSidebarOpen && <FiMenu size={24} onClick={() => setSidebarOpen(true)} />}
+          {!isSidebarOpen && <FiMenu size={24} onClick={() => toggleSidebar(true)} />}
           <h3>BookMemo</h3>
         </MobileHeader>
         <Outlet />

@@ -1,41 +1,50 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Toast } from './UI/Toast';
 import { FiAlertTriangle } from 'react-icons/fi';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const AndroidExitHandler: React.FC = () => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { t } = useLanguage();
     const [showExitToast, setShowExitToast] = useState(false);
     const lastPressTime = useRef<number>(0);
 
     const isAtRoot = location.pathname === '/' || location.pathname === '';
 
     useEffect(() => {
-        // Function to ensure we have an interceptor state at the root
-        const ensureDummyState = () => {
-            if (isAtRoot && (!window.history.state || !window.history.state.noExit)) {
-                window.history.pushState({ noExit: true }, '');
+        // Function to ensure we have an interceptor state
+        const ensureGuardState = () => {
+            if (!window.history.state || !window.history.state.isGuard) {
+                window.history.pushState({ isGuard: true }, '');
             }
         };
 
-        ensureDummyState();
+        ensureGuardState();
 
         const handlePopState = (event: PopStateEvent) => {
-            if (isAtRoot) {
-                // If the state we popped TO does not have our flag, it means we intercepted a "back" 
-                // that tried to leave the root.
-                if (!event.state || !event.state.noExit) {
+            // If the state we popped TO does not have our flag, it means we intercepted a "back" 
+            // that tried to leave the app or go past our first entry.
+            if (!event.state || !event.state.isGuard) {
+                if (!isAtRoot) {
+                    // Smart navigation: go to root instead of exiting
+                    navigate('/', { replace: true });
+                    // Re-push guard for the new root state
+                    window.history.pushState({ isGuard: true }, '');
+                } else {
+                    // Already at root: exit warning logic
                     const now = Date.now();
                     const timeDiff = now - lastPressTime.current;
 
                     if (timeDiff < 2000) {
-                        // Real exit: go back once more to skip our initial entry
+                        // Real exit: go back once more which will actually leave the site
                         window.history.back();
                     } else {
-                        // First press: warn, show toast, and re-push the dummy
+                        // First press: warn, show toast, and re-push the guard
                         lastPressTime.current = now;
                         setShowExitToast(true);
-                        window.history.pushState({ noExit: true }, '');
+                        window.history.pushState({ isGuard: true }, '');
                     }
                 }
             }
@@ -46,16 +55,16 @@ export const AndroidExitHandler: React.FC = () => {
         return () => {
             window.removeEventListener('popstate', handlePopState);
         };
-    }, [isAtRoot]);
+    }, [isAtRoot, navigate]);
 
     if (!showExitToast) return null;
 
     return (
         <Toast
             variant="warning"
-            position="left-centered"
+            position="bottom"
             icon={<FiAlertTriangle size={14} />}
-            message={"뒤로 가기 버튼을\n한 번 더 누르면 종료됩니다."}
+            message={t.android?.exit_warning || "Press back again to exit."}
             onClose={() => setShowExitToast(false)}
         />
     );

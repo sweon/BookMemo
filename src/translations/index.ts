@@ -159,6 +159,9 @@ export const translations = {
             undo: "Undo",
             pen: "Pen",
             eraser: "Eraser"
+        },
+        android: {
+            exit_warning: "Press back again to exit."
         }
     },
     ko: {
@@ -321,6 +324,9 @@ export const translations = {
             undo: "실행 취소",
             pen: "펜",
             eraser: "지우개"
+        },
+        android: {
+            exit_warning: "뒤로 가기 버튼을\n한 번 더 누르면 종료됩니다."
         }
     }
 };
