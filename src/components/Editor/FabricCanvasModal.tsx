@@ -230,6 +230,83 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         };
     }, []);
 
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't trigger shortcuts if user is typing in an input
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            const key = e.key.toLowerCase();
+
+            // Tool shortcuts
+            switch (key) {
+                case 'p': // Pen
+                case 'b': // Brush (alternative)
+                    setActiveTool('pen');
+                    break;
+                case 'l': // Line
+                    setActiveTool('line');
+                    break;
+                case 'r': // Rectangle
+                    setActiveTool('rect');
+                    break;
+                case 'c': // Circle
+                    setActiveTool('circle');
+                    break;
+                case 'e': // Eraser (pixel)
+                    setActiveTool('eraser_pixel');
+                    break;
+                case 'd': // Delete eraser (object)
+                case 'x': // Alternative for object eraser
+                    setActiveTool('eraser_object');
+                    break;
+                case 'z': // Undo
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        handleUndo();
+                    }
+                    break;
+                case 'escape': // Close modal
+                    onClose();
+                    break;
+                case 'enter': // Save
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        handleSave();
+                    }
+                    break;
+                case 'delete':
+                case 'backspace':
+                    // Delete selected object if any (for object eraser mode)
+                    const canvas = fabricCanvasRef.current;
+                    if (canvas) {
+                        const active = canvas.getActiveObject();
+                        if (active) {
+                            canvas.remove(active);
+                            canvas.requestRenderAll();
+                        }
+                    }
+                    break;
+                // Brush size shortcuts (1-4)
+                case '1':
+                    setBrushSize(BRUSH_SIZES[0]);
+                    break;
+                case '2':
+                    setBrushSize(BRUSH_SIZES[1]);
+                    break;
+                case '3':
+                    setBrushSize(BRUSH_SIZES[2]);
+                    break;
+                case '4':
+                    setBrushSize(BRUSH_SIZES[3]);
+                    break;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
     // Tool Switching Logic
     useEffect(() => {
         const canvas = fabricCanvasRef.current;
