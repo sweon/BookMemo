@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SimpleMDE from 'react-simplemde-editor';
 import 'easymde/dist/easymde.min.css';
 import ReactMarkdown from 'react-markdown';
@@ -252,6 +252,129 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange 
     maxHeight: "500px",
   }), []);
 
+  // Effect to update CodeMirror widgets safely without flickering
+  useEffect(() => {
+    const cm = cmRef.current;
+    if (!cm) return;
+
+    const updateWidgets = () => {
+      // 1. Collect all existing fabric markers
+      const existingMarks: any[] = [];
+      cm.getAllMarks().forEach((m: any) => {
+        if (m.className === 'fabric-replacement-mark') {
+          existingMarks.push(m);
+        }
+      });
+
+      // 2. Identify current fabric blocks in text
+      const fabricBlocks: { start: any; end: any; }[] = [];
+      const lineCount = cm.lineCount();
+      let inBlock = false;
+      let startLine = -1;
+
+      for (let i = 0; i < lineCount; i++) {
+        const lineText = cm.getLine(i);
+        if (lineText.trim().startsWith('```fabric')) {
+          inBlock = true;
+          startLine = i;
+        } else if (inBlock && lineText.trim().startsWith('```')) {
+          inBlock = false;
+          // Valid block found
+          fabricBlocks.push({
+            start: { line: startLine, ch: 0 },
+            end: { line: i, ch: lineText.length }
+          });
+        }
+      }
+
+      // 3. Reconcile: Remove invalid marks
+      existingMarks.forEach((mark) => {
+        const pos = mark.find();
+        if (!pos) return; // already cleared
+        // Check if this mark matches any current block range roughly
+        // Strictly, we can simply check if the text inside is still valid fabric block
+        // But atomic markers usually handle deletions. 
+        // We just need to check if existing marks align with current desired blocks.
+        // Actually, simpler: 
+        // If a mark exists, check if it's in our `fabricBlocks` list.
+        // If it is, remove from list (don't re-add). If it's not in list, clear mark?
+        // Note: pos.from.line might differ if lines moved. CodeMirror handles line tracking.
+
+        // Let's rely on overlap detection.
+        const isStillValid = fabricBlocks.some(block =>
+          block.start.line === pos.from.line && block.end.line === pos.to.line
+        );
+
+        if (!isStillValid) {
+          // Check if text inside is truly not fabric anymore? 
+          // Or just clear and assume re-add if valid? 
+          // Clearing leads to potential flash if we re-add immediately?
+          // Let's simply clear all and re-add? No, flickering.
+
+          // Optimization: Skip checking, just find UNMARKED blocks.
+        }
+      });
+
+      // Simpler V2: Just find blocks, check if marked.
+      fabricBlocks.forEach(block => {
+        const marksAtStart = cm.findMarksAt(block.start);
+        const hasFabricMark = marksAtStart.some((m: any) => m.className === 'fabric-replacement-mark');
+
+        if (!hasFabricMark) {
+          const el = document.createElement('div');
+          el.className = 'drawing-widget-banner';
+          el.style.cssText = `
+                background: linear-gradient(to right, #f8f9fa, #e9ecef); 
+                border: 1px solid #dee2e6; 
+                border-left: 4px solid #333;
+                border-radius: 6px; 
+                padding: 12px 16px; 
+                margin: 4px 0; 
+                display: flex; 
+                align-items: center; 
+                gap: 12px;
+                font-family: system-ui, sans-serif;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                cursor: pointer;
+              `;
+          el.innerHTML = `
+                <div style="font-size: 20px;">🎨</div>
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; color: #343a40; font-size: 14px;">Drawing Object</div>
+                  <div style="font-size: 11px; color: #868e96;">Click to edit this drawing</div>
+                </div>
+              `;
+
+          el.onclick = (e) => {
+            e.stopPropagation();
+            // Temporarily clear mark to allow 'handleDrawing' to read raw text?
+            // No, handleDrawing reads cm.getLine() which returns raw text even if marked replaced!
+            cm.setCursor(block.start);
+            handleDrawingRef.current();
+          };
+
+          cm.markText(block.start, block.end, {
+            replacedWith: el,
+            atomic: true,
+            className: 'fabric-replacement-mark',
+            selectRight: true, // Allow cursor to coexist?
+          });
+        }
+      });
+    };
+
+    // Run initially
+    updateWidgets();
+
+    // Hook into changes to update
+    const changeHandler = () => updateWidgets();
+    cm.on('change', changeHandler);
+
+    return () => {
+      cm.off('change', changeHandler);
+    };
+  }, [value]); // Dep on value ensures we get fresh ref if re-mounted, but cm.on handles live updates
+
   return (
     <>
       <EditorWrapper>
@@ -259,7 +382,11 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange 
           value={value}
           onChange={onChange}
           options={options}
-          getCodemirrorInstance={(cm) => { cmRef.current = cm; }}
+          getCodemirrorInstance={(cm) => {
+            cmRef.current = cm;
+            // Trigger explicit update on mount
+            // setTimeout(() => updateFabricWidgets(cm), 100);
+          }}
         />
       </EditorWrapper>
       {isDrawingOpen && (
