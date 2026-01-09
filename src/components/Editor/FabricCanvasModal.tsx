@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import styled from 'styled-components';
 import { fabric } from 'fabric';
-import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType, FiArrowDown } from 'react-icons/fi';
+import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType, FiArrowDown, FiTriangle } from 'react-icons/fi';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 // Pixel Eraser Icon - looks like a classic eraser
@@ -20,6 +20,18 @@ const ObjectEraserIcon = () => (
         <path d="M14 4L20 10" strokeWidth="2.5" />
         <circle cx="19" cy="5" r="4" fill="#f03e3e" stroke="#f03e3e" strokeWidth="1" />
         <path d="M19 3V7M17 5H21" stroke="white" strokeWidth="1.5" />
+    </svg>
+);
+
+const EllipseIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="12" rx="9" ry="5" />
+    </svg>
+);
+
+const DiamondIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2L2 12L12 22L22 12L12 2Z" />
     </svg>
 );
 
@@ -172,7 +184,7 @@ interface FabricCanvasModalProps {
 const COLORS = ['#000000', '#e03131', '#2f9e44', '#1971c2', '#f08c00', '#9c36b5'];
 const BRUSH_SIZES = [2, 4, 8, 16];
 
-type ToolType = 'pen' | 'eraser_pixel' | 'eraser_object' | 'line' | 'rect' | 'circle' | 'text';
+type ToolType = 'pen' | 'eraser_pixel' | 'eraser_object' | 'line' | 'rect' | 'circle' | 'text' | 'triangle' | 'ellipse' | 'diamond';
 
 export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialData, onSave, onClose }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -450,6 +462,9 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
             case 'line':
             case 'rect':
             case 'circle':
+            case 'triangle':
+            case 'ellipse':
+            case 'diamond':
                 canvas.defaultCursor = 'crosshair';
                 // Attach shape drawing handlers
                 canvas.on('mouse:down', handleShapeMouseDown);
@@ -495,6 +510,27 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
             shape = new fabric.Circle({
                 ...commonProps,
                 radius: 0,
+            });
+        } else if (activeTool === 'triangle') {
+            shape = new fabric.Triangle({
+                ...commonProps,
+                width: 0,
+                height: 0,
+            });
+        } else if (activeTool === 'ellipse') {
+            shape = new fabric.Ellipse({
+                ...commonProps,
+                rx: 0,
+                ry: 0,
+            });
+        } else if (activeTool === 'diamond') {
+            shape = new fabric.Polygon([
+                new fabric.Point(0, 0),
+                new fabric.Point(0, 0),
+                new fabric.Point(0, 0),
+                new fabric.Point(0, 0)
+            ], {
+                ...commonProps,
             });
         }
 
@@ -549,6 +585,47 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
             (shape as fabric.Circle).set({ radius: dist });
             // And reset origin?
             // No, easier: Start point is top-left corner of bounding box.
+        } else if (activeTool === 'triangle') {
+            const width = Math.abs(pointer.x - start.x);
+            const height = Math.abs(pointer.y - start.y);
+            const left = Math.min(start.x, pointer.x);
+            const top = Math.min(start.y, pointer.y);
+            shape.set({ width, height, left, top });
+        } else if (activeTool === 'ellipse') {
+            const rx = Math.abs(pointer.x - start.x) / 2;
+            const ry = Math.abs(pointer.y - start.y) / 2;
+            const left = Math.min(start.x, pointer.x);
+            const top = Math.min(start.y, pointer.y);
+            (shape as fabric.Ellipse).set({ rx, ry, left, top });
+        } else if (activeTool === 'diamond') {
+            const width = Math.abs(pointer.x - start.x);
+            const height = Math.abs(pointer.y - start.y);
+            const left = Math.min(start.x, pointer.x);
+            const top = Math.min(start.y, pointer.y);
+
+            // Points relative to the top-left (0,0) of the bounding box
+            const points = [
+                new fabric.Point(width / 2, 0),        // Top
+                new fabric.Point(width, height / 2),   // Right
+                new fabric.Point(width / 2, height),   // Bottom
+                new fabric.Point(0, height / 2)        // Left
+            ];
+
+            // 1. Update points first
+            (shape as fabric.Polygon).set({ points });
+
+            // 2. Force recalculate dimensions and internal path offset
+            (shape as any)._setPositionDimensions({});
+
+            // 3. Position the bounding box exactly where the mouse drag area is
+            shape.set({
+                left: left,
+                top: top,
+                width: width,
+                height: height
+            });
+
+            shape.setCoords();
         }
 
         canvas.requestRenderAll();
@@ -651,6 +728,15 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                         </ToolButton>
                         <ToolButton $active={activeTool === 'circle'} onClick={() => setActiveTool('circle')} title="Circle">
                             <FiCircle />
+                        </ToolButton>
+                        <ToolButton $active={activeTool === 'ellipse'} onClick={() => setActiveTool('ellipse')} title="Ellipse">
+                            <EllipseIcon />
+                        </ToolButton>
+                        <ToolButton $active={activeTool === 'triangle'} onClick={() => setActiveTool('triangle')} title="Triangle">
+                            <FiTriangle />
+                        </ToolButton>
+                        <ToolButton $active={activeTool === 'diamond'} onClick={() => setActiveTool('diamond')} title="Diamond">
+                            <DiamondIcon />
                         </ToolButton>
                         <ToolButton $active={activeTool === 'text'} onClick={() => setActiveTool('text')} title="Text (T)">
                             <FiType />
