@@ -190,7 +190,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
-    const { t, language } = useLanguage();
+    const { t } = useLanguage();
 
     const [activeTool, setActiveTool] = useState<ToolType>('pen');
     const [color, setColor] = useState('#000000');
@@ -761,8 +761,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                         </ToolButton>
                         <ToolButton onClick={() => {
                             if (window.confirm('Clear all?')) {
-                                fabricCanvasRef.current?.clear();
-                                fabricCanvasRef.current?.setBackgroundColor('#ffffff', () => fabricCanvasRef.current?.renderAll());
+                                handleClear();
                             }
                         }} title="Clear All">
                             <FiTrash2 size={18} />
