@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import styled from 'styled-components';
 import { fabric } from 'fabric';
-import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiSquare, FiCircle, FiMinus, FiType } from 'react-icons/fi';
+import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType } from 'react-icons/fi';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 // Pixel Eraser Icon - looks like a classic eraser
@@ -187,6 +187,33 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const startPointRef = useRef<{ x: number, y: number } | null>(null);
     const activeShapeRef = useRef<fabric.Object | null>(null);
 
+    // History for undo/redo
+    const historyRef = useRef<string[]>([]);
+    const historyIndexRef = useRef(-1);
+    const isUndoRedoRef = useRef(false); // Prevent saving during undo/redo
+
+    const saveHistory = () => {
+        if (isUndoRedoRef.current) return;
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        const json = JSON.stringify(canvas.toJSON());
+
+        // Remove any future history if we're not at the end
+        if (historyIndexRef.current < historyRef.current.length - 1) {
+            historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
+        }
+
+        historyRef.current.push(json);
+        historyIndexRef.current = historyRef.current.length - 1;
+
+        // Limit history size
+        if (historyRef.current.length > 50) {
+            historyRef.current.shift();
+            historyIndexRef.current--;
+        }
+    };
+
     useLayoutEffect(() => {
         if (!canvasRef.current || !containerRef.current) return;
 
@@ -213,11 +240,20 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
         fabricCanvasRef.current = canvas;
 
+        // Save initial state to history
+        setTimeout(() => saveHistory(), 100);
+
+        // Listen for changes to save history
+        canvas.on('object:added', saveHistory);
+        canvas.on('object:modified', saveHistory);
+        canvas.on('object:removed', saveHistory);
+
         if (initialData) {
             try {
                 const json = JSON.parse(initialData);
                 canvas.loadFromJSON(json, () => {
                     canvas.renderAll();
+                    saveHistory(); // Save loaded state
                 });
             } catch (e) {
                 console.error("Failed to load fabric JSON", e);
@@ -225,6 +261,9 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         }
 
         return () => {
+            canvas.off('object:added', saveHistory);
+            canvas.off('object:modified', saveHistory);
+            canvas.off('object:removed', saveHistory);
             canvas.dispose();
             fabricCanvasRef.current = null;
         };
@@ -263,10 +302,19 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                 case 'x': // Alternative for object eraser
                     setActiveTool('eraser_object');
                     break;
-                case 'z': // Undo
-                    if (e.ctrlKey || e.metaKey) {
+                case 'z': // Undo / Redo
+                    if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+                        e.preventDefault();
+                        handleRedo();
+                    } else if (e.ctrlKey || e.metaKey) {
                         e.preventDefault();
                         handleUndo();
+                    }
+                    break;
+                case 'y': // Alternative redo (Ctrl+Y)
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        handleRedo();
                     }
                     break;
                 case 'escape': // Close modal
@@ -520,9 +568,30 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const handleUndo = () => {
         const canvas = fabricCanvasRef.current;
         if (!canvas) return;
-        const objects = canvas.getObjects();
-        if (objects.length > 0) {
-            canvas.remove(objects[objects.length - 1]);
+
+        if (historyIndexRef.current > 0) {
+            isUndoRedoRef.current = true;
+            historyIndexRef.current--;
+            const json = historyRef.current[historyIndexRef.current];
+            canvas.loadFromJSON(JSON.parse(json), () => {
+                canvas.renderAll();
+                isUndoRedoRef.current = false;
+            });
+        }
+    };
+
+    const handleRedo = () => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        if (historyIndexRef.current < historyRef.current.length - 1) {
+            isUndoRedoRef.current = true;
+            historyIndexRef.current++;
+            const json = historyRef.current[historyIndexRef.current];
+            canvas.loadFromJSON(JSON.parse(json), () => {
+                canvas.renderAll();
+                isUndoRedoRef.current = false;
+            });
         }
     };
 
@@ -578,8 +647,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                     </ToolGroup>
 
                     <ToolGroup>
-                        <ToolButton onClick={handleUndo} title="Undo">
+                        <ToolButton onClick={handleUndo} title="Undo (Ctrl+Z)">
                             <FiRotateCcw />
+                        </ToolButton>
+                        <ToolButton onClick={handleRedo} title="Redo (Ctrl+Shift+Z)">
+                            <FiRotateCw />
                         </ToolButton>
                         <ToolButton onClick={handleClear} title="Clear All">
                             <FiTrash2 />
