@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import styled from 'styled-components';
 import { fabric } from 'fabric';
-import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiSquare, FiCircle, FiMinus } from 'react-icons/fi';
+import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiSquare, FiCircle, FiMinus, FiType } from 'react-icons/fi';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 // Pixel Eraser Icon - looks like a classic eraser
@@ -170,7 +170,7 @@ interface FabricCanvasModalProps {
 const COLORS = ['#000000', '#e03131', '#2f9e44', '#1971c2', '#f08c00', '#9c36b5'];
 const BRUSH_SIZES = [2, 4, 8, 16];
 
-type ToolType = 'pen' | 'eraser_pixel' | 'eraser_object' | 'line' | 'rect' | 'circle';
+type ToolType = 'pen' | 'eraser_pixel' | 'eraser_object' | 'line' | 'rect' | 'circle' | 'text';
 
 export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialData, onSave, onClose }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -252,6 +252,9 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                     break;
                 case 'c': // Circle
                     setActiveTool('circle');
+                    break;
+                case 't': // Text
+                    setActiveTool('text');
                     break;
                 case 'e': // Eraser (pixel)
                     setActiveTool('eraser_pixel');
@@ -362,6 +365,32 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                         canvas.remove(opt.target);
                         canvas.requestRenderAll();
                     }
+                });
+                break;
+
+            case 'text':
+                canvas.isDrawingMode = false;
+                canvas.defaultCursor = 'text';
+                canvas.on('mouse:down', (opt) => {
+                    // Only add text if clicking on empty area
+                    if (opt.target) return;
+
+                    const pointer = canvas.getPointer(opt.e);
+                    const text = new fabric.IText('Type here...', {
+                        left: pointer.x,
+                        top: pointer.y,
+                        fontFamily: 'Arial, sans-serif',
+                        fontSize: Math.max(16, brushSize * 4),
+                        fill: color,
+                        editable: true,
+                        selectable: true,
+                        evented: true,
+                    });
+                    canvas.add(text);
+                    canvas.setActiveObject(text);
+                    text.enterEditing();
+                    text.selectAll();
+                    canvas.requestRenderAll();
                 });
                 break;
 
@@ -533,6 +562,9 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                         </ToolButton>
                         <ToolButton $active={activeTool === 'circle'} onClick={() => setActiveTool('circle')} title="Circle">
                             <FiCircle />
+                        </ToolButton>
+                        <ToolButton $active={activeTool === 'text'} onClick={() => setActiveTool('text')} title="Text (T)">
+                            <FiType />
                         </ToolButton>
                     </ToolGroup>
 
