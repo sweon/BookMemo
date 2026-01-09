@@ -1,8 +1,16 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import styled from 'styled-components';
 import { fabric } from 'fabric';
-import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiZap } from 'react-icons/fi';
+import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiSquare, FiCircle, FiMinus } from 'react-icons/fi';
 import { useLanguage } from '../../contexts/LanguageContext';
+
+// Fallback for Eraser icon if FaEraser not available/imported
+const EraserIcon = ({ strokeEraser }: { strokeEraser?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" />
+        {strokeEraser && <path d="M11 11L21 21" stroke="#f03e3e" strokeWidth="3" />}
+    </svg>
+);
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -23,7 +31,7 @@ const ModalContainer = styled.div`
   height: 90vh;
   max-width: 1280px;
   max-height: 1000px;
-  background: #ffffff; /* Always white canvas for consistency */
+  background: #ffffff;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -55,6 +63,15 @@ const Toolbar = styled.div`
   border-bottom: 1px solid #e0e0e0;
   align-items: center;
   overflow-x: auto;
+  
+  /* Hide scrollbar for clean look */
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+  }
 `;
 
 const ToolButton = styled.button<{ $active?: boolean }>`
@@ -68,9 +85,22 @@ const ToolButton = styled.button<{ $active?: boolean }>`
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
+  min-width: 40px;
   
   &:hover {
     background: #e9ecef;
+  }
+`;
+
+const ToolGroup = styled.div`
+  display: flex;
+  gap: 2px;
+  padding-right: 8px;
+  border-right: 1px solid #dee2e6;
+  margin-right: 8px;
+
+  &:last-child {
+      border: none;
   }
 `;
 
@@ -88,21 +118,13 @@ const ColorButton = styled.div<{ $color: string; $selected?: boolean }>`
   }
 `;
 
-const Separator = styled.div`
-  width: 1px;
-  height: 24px;
-  background: #dee2e6;
-  margin: 0 0.5rem;
-`;
-
 const CanvasWrapper = styled.div`
   flex: 1;
   width: 100%;
   height: 100%;
   background: #ffffff;
-  overflow: auto;
+  overflow: hidden; /* Important for preventing scroll during drag */
   position: relative;
-  /* Touch action handling for mobile drawing */
   touch-action: none; 
 `;
 
@@ -135,7 +157,9 @@ interface FabricCanvasModalProps {
 }
 
 const COLORS = ['#000000', '#e03131', '#2f9e44', '#1971c2', '#f08c00', '#9c36b5'];
-const BRUSH_SIZES = [2, 5, 10, 20];
+const BRUSH_SIZES = [2, 4, 8, 16];
+
+type ToolType = 'pen' | 'eraser_pixel' | 'eraser_object' | 'line' | 'rect' | 'circle';
 
 export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialData, onSave, onClose }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -143,48 +167,46 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
     const { t } = useLanguage();
 
-    const [activeTool, setActiveTool] = useState<'pen' | 'eraser'>('pen');
+    const [activeTool, setActiveTool] = useState<ToolType>('pen');
     const [color, setColor] = useState('#000000');
     const [brushSize, setBrushSize] = useState(2);
+
+    // Shape drawing refs
+    const isDrawingRef = useRef(false);
+    const startPointRef = useRef<{ x: number, y: number } | null>(null);
+    const activeShapeRef = useRef<fabric.Object | null>(null);
 
     useLayoutEffect(() => {
         if (!canvasRef.current || !containerRef.current) return;
 
-        // Destroy existing if any
+        // Cleanup
         if (fabricCanvasRef.current) {
             fabricCanvasRef.current.dispose();
         }
 
-        // Measure container
         const width = containerRef.current.clientWidth;
         const height = containerRef.current.clientHeight;
 
-        // Initialize Fabric Canvas
-        // Use low pixelRatio on very high res devices if needed, but lets try default first (auto retinascaling)
-        // For safety on Android "Ultra", maybe we can limit cached rendering
         const canvas = new fabric.Canvas(canvasRef.current, {
             width,
             height,
             backgroundColor: '#ffffff',
-            isDrawingMode: true,
-            enableRetinaScaling: true // Default is true, good for quality. If memory issues, set false.
+            isDrawingMode: true, // Default to true as Pen is default
+            selection: false, // Disable group selection by default for better drawing UX
         });
 
-        // Configure Brush
+        // Set initial brush
         canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
         canvas.freeDrawingBrush.width = brushSize;
         canvas.freeDrawingBrush.color = color;
 
         fabricCanvasRef.current = canvas;
 
-        // Load initial data
         if (initialData) {
             try {
                 const json = JSON.parse(initialData);
                 canvas.loadFromJSON(json, () => {
                     canvas.renderAll();
-                    // Optional: handle scaling if canvas size differs from saved size
-                    // For now, assume relative compatibility or just render
                 });
             } catch (e) {
                 console.error("Failed to load fabric JSON", e);
@@ -197,26 +219,165 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         };
     }, []);
 
-    // Update brush settings when state changes
+    // Tool Switching Logic
     useEffect(() => {
         const canvas = fabricCanvasRef.current;
         if (!canvas) return;
 
-        if (activeTool === 'pen') {
-            canvas.isDrawingMode = true;
-            canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-            canvas.freeDrawingBrush.color = color;
-            canvas.freeDrawingBrush.width = brushSize;
-        } else if (activeTool === 'eraser') {
-            // Simple eraser: White pencil
-            // A true eraser in Fabric requires 'destination-out' compositing or custom brush
-            // but 'white brush' is standard for whiteboards.
-            canvas.isDrawingMode = true;
-            canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-            canvas.freeDrawingBrush.color = '#ffffff';
-            canvas.freeDrawingBrush.width = brushSize * 3; // Wider eraser
+        // Reset behaviors
+        canvas.isDrawingMode = false;
+        canvas.selection = false;
+        canvas.defaultCursor = 'default';
+        canvas.hoverCursor = 'default';
+
+        // Remove object erasing listener if present (we'll re-add if needed)
+        canvas.off('mouse:down');
+        canvas.off('mouse:move');
+        canvas.off('mouse:up');
+
+        // Re-attach standard listeners if needed (none strictly for now unless shape)
+
+        switch (activeTool) {
+            case 'pen':
+                canvas.isDrawingMode = true;
+                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                canvas.freeDrawingBrush.color = color;
+                canvas.freeDrawingBrush.width = brushSize;
+                canvas.defaultCursor = 'crosshair';
+                break;
+
+            case 'eraser_pixel':
+                canvas.isDrawingMode = true;
+                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                canvas.freeDrawingBrush.color = '#ffffff'; // Simple white eraser
+                canvas.freeDrawingBrush.width = brushSize * 4; // Wider
+                // canvas.defaultCursor = 'url("eraser_cursor")'; // if we had one
+                break;
+
+            case 'eraser_object':
+                canvas.defaultCursor = 'pointer';
+                canvas.on('mouse:down', (opt) => {
+                    if (opt.target) {
+                        canvas.remove(opt.target);
+                        canvas.requestRenderAll();
+                    }
+                });
+                break;
+
+            case 'line':
+            case 'rect':
+            case 'circle':
+                canvas.defaultCursor = 'crosshair';
+                // Attach shape drawing handlers
+                canvas.on('mouse:down', handleShapeMouseDown);
+                canvas.on('mouse:move', handleShapeMouseMove);
+                canvas.on('mouse:up', handleShapeMouseUp);
+                break;
         }
+
     }, [activeTool, color, brushSize]);
+
+    // Shape Drawing Handlers
+    const handleShapeMouseDown = (opt: fabric.IEvent) => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        const pointer = canvas.getPointer(opt.e);
+        isDrawingRef.current = true;
+        startPointRef.current = { x: pointer.x, y: pointer.y };
+
+        let shape: fabric.Object | null = null;
+        const commonProps = {
+            stroke: color,
+            strokeWidth: brushSize,
+            fill: 'transparent',
+            left: pointer.x,
+            top: pointer.y,
+            selectable: false, // Initially false while drawing
+            evented: false,
+        };
+
+        if (activeTool === 'line') {
+            shape = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+                ...commonProps,
+                strokeLineCap: 'round'
+            });
+        } else if (activeTool === 'rect') {
+            shape = new fabric.Rect({
+                ...commonProps,
+                width: 0,
+                height: 0,
+            });
+        } else if (activeTool === 'circle') {
+            shape = new fabric.Circle({
+                ...commonProps,
+                radius: 0,
+            });
+        }
+
+        if (shape) {
+            activeShapeRef.current = shape;
+            canvas.add(shape);
+        }
+    };
+
+    const handleShapeMouseMove = (opt: fabric.IEvent) => {
+        if (!isDrawingRef.current || !activeShapeRef.current || !startPointRef.current) return;
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        const pointer = canvas.getPointer(opt.e);
+        const start = startPointRef.current;
+        const shape = activeShapeRef.current;
+
+        if (activeTool === 'line') {
+            (shape as fabric.Line).set({ x2: pointer.x, y2: pointer.y });
+        } else if (activeTool === 'rect') {
+            const width = Math.abs(pointer.x - start.x);
+            const height = Math.abs(pointer.y - start.y);
+            const left = Math.min(start.x, pointer.x);
+            const top = Math.min(start.y, pointer.y);
+            shape.set({ width, height, left, top });
+        } else if (activeTool === 'circle') {
+            // Radius is half distance roughly
+            // Simple dist
+            const dist = Math.sqrt(Math.pow(pointer.x - start.x, 2) + Math.pow(pointer.y - start.y, 2));
+            // Let's do center-based radius or simple corner-to-corner diameter
+            // Fabric Circle is top/left based.
+            // Let's assume drag is diameter.
+            (shape as fabric.Circle).set({
+                radius: dist / 2,
+                // Adjust position to center circle between start and current?
+                // Or just start as center? 
+                // Let's simply grow radius from start point for better UX (center start)
+                // Left/Top needs updates?
+                // Actually simple corner-drag expectation:
+                // If I drag right-down, circle should form inside that box.
+                // diameter = min(dx, dy) 
+            });
+            // Better circle UX: Center-based or bounding-box based?
+            // Bounding box:
+            // const width = Math.abs(pointer.x - start.x);
+            // const height = Math.abs(pointer.y - start.y);
+            // const radius = Math.max(width, height) / 2;
+            // shape.set({ radius: radius });
+            // But circle center moves.
+            // Let's just do: Start point is enter. Radius is distance.
+            (shape as fabric.Circle).set({ radius: dist });
+            // And reset origin?
+            // No, easier: Start point is top-left corner of bounding box.
+        }
+
+        canvas.requestRenderAll();
+    };
+
+    const handleShapeMouseUp = () => {
+        isDrawingRef.current = false;
+        if (activeShapeRef.current) {
+            activeShapeRef.current.setCoords();
+            activeShapeRef.current = null;
+        }
+    };
 
     const handleClear = () => {
         if (!fabricCanvasRef.current) return;
@@ -227,12 +388,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     };
 
     const handleUndo = () => {
-        // Basic undo is hard in Fabric without a stack. 
-        // Implementing a simple "remove last added object" for the MVP
         const canvas = fabricCanvasRef.current;
         if (!canvas) return;
-
-        // We can access canvas._objects or getObjects()
         const objects = canvas.getObjects();
         if (objects.length > 0) {
             canvas.remove(objects[objects.length - 1]);
@@ -241,7 +398,6 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     const handleSave = () => {
         if (!fabricCanvasRef.current) return;
-        // Export to JSON
         const json = JSON.stringify(fabricCanvasRef.current.toJSON());
         onSave(json);
     };
@@ -264,57 +420,75 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                 </Header>
 
                 <Toolbar>
-                    {/* Tools */}
-                    <ToolButton $active={activeTool === 'pen'} onClick={() => setActiveTool('pen')}>
-                        <FiEdit2 />
-                    </ToolButton>
-                    <ToolButton $active={activeTool === 'eraser'} onClick={() => setActiveTool('eraser')}>
-                        <FiZap /> {/* Using Zap icon for eraser or similar */}
-                    </ToolButton>
-
-                    <Separator />
-
-                    {/* Action */}
-                    <ToolButton onClick={handleUndo} title="Undo Last Stroke">
-                        <FiRotateCcw />
-                    </ToolButton>
-                    <ToolButton onClick={handleClear} title="Clear All">
-                        <FiTrash2 />
-                    </ToolButton>
-
-                    <Separator />
-
-                    {/* Colors */}
-                    {COLORS.map(c => (
-                        <ColorButton
-                            key={c}
-                            $color={c}
-                            $selected={color === c && activeTool === 'pen'}
-                            onClick={() => {
-                                setColor(c);
-                                setActiveTool('pen');
-                            }}
-                        />
-                    ))}
-
-                    <Separator />
-
-                    {/* Sizes */}
-                    {BRUSH_SIZES.map(s => (
-                        <ToolButton
-                            key={s}
-                            $active={brushSize === s}
-                            onClick={() => setBrushSize(s)}
-                            style={{ width: 30, fontSize: '0.8rem' }}
-                        >
-                            <div style={{
-                                width: s,
-                                height: s,
-                                borderRadius: '50%',
-                                background: '#333'
-                            }} />
+                    <ToolGroup>
+                        <ToolButton $active={activeTool === 'pen'} onClick={() => setActiveTool('pen')} title="Pen">
+                            <FiEdit2 />
                         </ToolButton>
-                    ))}
+                        <ToolButton $active={activeTool === 'line'} onClick={() => setActiveTool('line')} title="Line">
+                            <FiMinus style={{ transform: 'rotate(-45deg)' }} />
+                        </ToolButton>
+                        <ToolButton $active={activeTool === 'rect'} onClick={() => setActiveTool('rect')} title="Rectangle">
+                            <FiSquare />
+                        </ToolButton>
+                        <ToolButton $active={activeTool === 'circle'} onClick={() => setActiveTool('circle')} title="Circle">
+                            <FiCircle />
+                        </ToolButton>
+                    </ToolGroup>
+
+                    <ToolGroup>
+                        <ToolButton $active={activeTool === 'eraser_pixel'} onClick={() => setActiveTool('eraser_pixel')} title="Eraser (Brush)">
+                            <EraserIcon />
+                        </ToolButton>
+                        <ToolButton $active={activeTool === 'eraser_object'} onClick={() => setActiveTool('eraser_object')} title="Eraser (Object Delete)">
+                            <EraserIcon strokeEraser />
+                        </ToolButton>
+                    </ToolGroup>
+
+                    <ToolGroup>
+                        <ToolButton onClick={handleUndo} title="Undo">
+                            <FiRotateCcw />
+                        </ToolButton>
+                        <ToolButton onClick={handleClear} title="Clear All">
+                            <FiTrash2 />
+                        </ToolButton>
+                    </ToolGroup>
+
+                    <ToolGroup>
+                        {COLORS.map(c => (
+                            <div key={c} style={{ padding: 4 }}>
+                                <ColorButton
+                                    $color={c}
+                                    $selected={color === c && !activeTool.startsWith('eraser')}
+                                    onClick={() => {
+                                        setColor(c);
+                                        // Auto switch to pen if using eraser or other shape?
+                                        if (activeTool.startsWith('eraser')) {
+                                            setActiveTool('pen');
+                                        }
+                                    }}
+                                />
+                            </div>
+                        ))}
+                    </ToolGroup>
+
+                    <ToolGroup>
+                        {BRUSH_SIZES.map(s => (
+                            <ToolButton
+                                key={s}
+                                $active={brushSize === s}
+                                onClick={() => setBrushSize(s)}
+                                style={{ width: 30, fontSize: '0.8rem', padding: 0 }}
+                                title={`Size: ${s}px`}
+                            >
+                                <div style={{
+                                    width: Math.min(s, 20),
+                                    height: Math.min(s, 20),
+                                    borderRadius: '50%',
+                                    background: '#333'
+                                }} />
+                            </ToolButton>
+                        ))}
+                    </ToolGroup>
                 </Toolbar>
 
                 <CanvasWrapper ref={containerRef}>
