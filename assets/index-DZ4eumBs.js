@@ -824,14 +824,14 @@ Please change the parent <Route path="${I}"> to <Route path="${I==="/"?"*":`${I}
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  padding: 0.4rem 0.6rem;
+  padding: 6px 12px;
   border-radius: 6px;
   border: none;
   cursor: pointer;
   background: ${({theme:e})=>e.colors.primary};
   color: white;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
   flex-shrink: 1;
   min-width: 0;
