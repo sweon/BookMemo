@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import styled from 'styled-components';
 import { fabric } from 'fabric';
-import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType } from 'react-icons/fi';
+import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType, FiArrowDown } from 'react-icons/fi';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 // Pixel Eraser Icon - looks like a classic eraser
@@ -127,10 +127,18 @@ const CanvasWrapper = styled.div`
   flex: 1;
   width: 100%;
   height: 100%;
-  background: #ffffff;
-  overflow: hidden; /* Important for preventing scroll during drag */
+  background: #f8f9fa;
+  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-x: hidden;
   position: relative;
-  touch-action: none; 
+  display: flex;
+  justify-content: center;
+  
+  /* Fabric container centering */
+  .canvas-container {
+    margin: 0 auto;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
 `;
 
 const FooterButtons = styled.div`
@@ -170,7 +178,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
     const [activeTool, setActiveTool] = useState<ToolType>('pen');
     const [color, setColor] = useState('#000000');
@@ -220,11 +228,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         const height = containerRef.current.clientHeight;
 
         const canvas = new fabric.Canvas(canvasRef.current, {
-            width,
+            width: width - 20, // Leave some room for potential scrollbar
             height,
             backgroundColor: '#ffffff',
-            isDrawingMode: true, // Default to true as Pen is default
-            selection: false, // Disable group selection by default for better drawing UX
+            isDrawingMode: true,
+            selection: false,
         });
 
         // Set initial brush
@@ -245,6 +253,9 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         if (initialData) {
             try {
                 const json = JSON.parse(initialData);
+                if (json.height) {
+                    canvas.setHeight(json.height);
+                }
                 canvas.loadFromJSON(json, () => {
                     canvas.renderAll();
                     saveHistory(); // Save loaded state
@@ -589,9 +600,24 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         }
     };
 
+    const handleExtendHeight = () => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        const currentHeight = canvas.getHeight();
+        const newHeight = currentHeight + 400; // Add 400px
+
+        canvas.setHeight(newHeight);
+        canvas.renderAll();
+        saveHistory();
+    };
+
     const handleSave = () => {
         if (!fabricCanvasRef.current) return;
-        const json = JSON.stringify(fabricCanvasRef.current.toJSON());
+        // Ensure dimensions are saved in JSON
+        const canvas = fabricCanvasRef.current;
+        const jsonObj = canvas.toJSON(['width', 'height']);
+        const json = JSON.stringify(jsonObj);
         onSave(json);
     };
 
@@ -646,6 +672,9 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                         </ToolButton>
                         <ToolButton onClick={handleRedo} title="Redo (Ctrl+Shift+Z)">
                             <FiRotateCw />
+                        </ToolButton>
+                        <ToolButton onClick={handleExtendHeight} title={language === 'ko' ? "아래로 확장" : "Extend Down"}>
+                            <FiArrowDown />
                         </ToolButton>
                         <ToolButton onClick={handleClear} title="Clear All">
                             <FiTrash2 />

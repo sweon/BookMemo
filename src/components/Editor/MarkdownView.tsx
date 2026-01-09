@@ -93,66 +93,99 @@ const MarkdownContainer = styled.div<{ $tableHeaderBg?: string }>`
 const FabricPreview = ({ json }: { json: string }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const fabricCanvasRef = React.useRef<fabric.StaticCanvas | null>(null);
 
   React.useLayoutEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
 
     const canvas = new fabric.StaticCanvas(canvasRef.current);
+    fabricCanvasRef.current = canvas;
 
     try {
       const data = JSON.parse(json);
       canvas.loadFromJSON(data, () => {
-        const originalWidth = data.width || 800;
-        const originalHeight = data.height || 600;
+        // Determine original dimensions
+        // If data.width/height is missing (old data), calculate from objects
+        let originalWidth = data.width;
+        let originalHeight = data.height;
+
+        if (!originalWidth || !originalHeight) {
+          const objects = canvas.getObjects();
+          if (objects.length > 0) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            objects.forEach(obj => {
+              const bounds = obj.getBoundingRect();
+              minX = Math.min(minX, bounds.left);
+              minY = Math.min(minY, bounds.top);
+              maxX = Math.max(maxX, bounds.left + bounds.width);
+              maxY = Math.max(maxY, bounds.top + bounds.height);
+            });
+            // Add some padding
+            originalWidth = Math.max(800, maxX + 20);
+            originalHeight = Math.max(600, maxY + 20);
+          } else {
+            originalWidth = 800;
+            originalHeight = 600;
+          }
+        }
 
         const resizeCanvas = () => {
-          if (!containerRef.current) return;
+          if (!containerRef.current || !fabricCanvasRef.current) return;
 
-          // Get container width
-          // Reduce slightly to account for scrollbars or padding rounding issues
-          const containerWidth = containerRef.current.clientWidth - 2;
+          const containerWidth = containerRef.current.clientWidth;
+          if (containerWidth === 0) return;
 
-          // Calculate scale needed to fit horizontally
-          // We allow scaling UP only if needed, but primarily scaling DOWN
+          // Scale down if container is smaller than content
           const scale = containerWidth < originalWidth ? containerWidth / originalWidth : 1;
 
-          // Set display dimensions strictly
-          const finalWidth = originalWidth * scale;
-          const finalHeight = originalHeight * scale;
-
-          canvas.setDimensions({
-            width: finalWidth,
-            height: finalHeight
+          fabricCanvasRef.current.setDimensions({
+            width: originalWidth * scale,
+            height: originalHeight * scale
           });
 
-          canvas.setZoom(scale);
-          canvas.renderAll();
+          fabricCanvasRef.current.setZoom(scale);
+          fabricCanvasRef.current.renderAll();
         };
 
-        // Initial sizing
-        // Request animation frame ensures DOM is painted and clientWidth is accurate
-        requestAnimationFrame(resizeCanvas);
+        // Initial resize
+        resizeCanvas();
 
-        // Responsive resizing
-        window.addEventListener('resize', resizeCanvas);
+        // Observe container size changes
+        const resizeObserver = new ResizeObserver(() => {
+          resizeCanvas();
+        });
+        if (containerRef.current) {
+          resizeObserver.observe(containerRef.current);
+        }
 
-        // Cleanup listener on dispose
-        (canvas as any).__resizeListener = resizeCanvas;
+        return () => {
+          resizeObserver.disconnect();
+        };
       });
     } catch (e) {
       console.error('Fabric load error:', e);
     }
 
     return () => {
-      if ((canvas as any).__resizeListener) {
-        window.removeEventListener('resize', (canvas as any).__resizeListener);
-      }
       canvas.dispose();
+      fabricCanvasRef.current = null;
     };
   }, [json]);
 
   return (
-    <div ref={containerRef} style={{ width: '100%', overflow: 'hidden', margin: '1em 0', border: '1px solid #eee', borderRadius: '8px' }}>
+    <div
+      ref={containerRef}
+      style={{
+        width: '100%',
+        overflow: 'hidden',
+        margin: '1.5em 0',
+        background: '#fff',
+        border: '1px solid #eee',
+        borderRadius: '8px',
+        display: 'flex',
+        justifyContent: 'center'
+      }}
+    >
       <canvas ref={canvasRef} />
     </div>
   );
