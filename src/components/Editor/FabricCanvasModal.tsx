@@ -4,11 +4,22 @@ import { fabric } from 'fabric';
 import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiSquare, FiCircle, FiMinus } from 'react-icons/fi';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-// Fallback for Eraser icon if FaEraser not available/imported
-const EraserIcon = ({ strokeEraser }: { strokeEraser?: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" />
-        {strokeEraser && <path d="M11 11L21 21" stroke="#f03e3e" strokeWidth="3" />}
+// Pixel Eraser Icon - looks like a classic eraser
+const PixelEraserIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 13L11 20H4L2 18C1.4 17.4 1.4 16.6 2 16L14 4L20 10L18 13Z" />
+        <path d="M14 4L20 10" strokeWidth="2.5" />
+        <rect x="2" y="20" width="20" height="2" fill="currentColor" stroke="none" rx="1" />
+    </svg>
+);
+
+// Object Eraser Icon - eraser with target/pointer indicator
+const ObjectEraserIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 13L11 20H4L2 18C1.4 17.4 1.4 16.6 2 16L14 4L20 10L18 13Z" />
+        <path d="M14 4L20 10" strokeWidth="2.5" />
+        <circle cx="19" cy="5" r="4" fill="#f03e3e" stroke="#f03e3e" strokeWidth="1" />
+        <path d="M19 3V7M17 5H21" stroke="white" strokeWidth="1.5" />
     </svg>
 );
 
@@ -437,10 +448,10 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
                     <ToolGroup>
                         <ToolButton $active={activeTool === 'eraser_pixel'} onClick={() => setActiveTool('eraser_pixel')} title="Eraser (Brush)">
-                            <EraserIcon />
+                            <PixelEraserIcon />
                         </ToolButton>
                         <ToolButton $active={activeTool === 'eraser_object'} onClick={() => setActiveTool('eraser_object')} title="Eraser (Object Delete)">
-                            <EraserIcon strokeEraser />
+                            <ObjectEraserIcon />
                         </ToolButton>
                     </ToolGroup>
 
