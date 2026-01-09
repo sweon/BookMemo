@@ -107,34 +107,36 @@ const FabricPreview = ({ json }: { json: string }) => {
 
         const resizeCanvas = () => {
           if (!containerRef.current) return;
-          // Force full width of container minus potentially borders/padding
-          const containerWidth = containerRef.current.getBoundingClientRect().width;
 
-          // Calculate scale to FIT the container if original is larger OR if we want it responsive
-          // Usually on phone we always want it to take max width available if possible
-          // But if original is small, maybe not stretch? Let's assume shrinking only for now to avoid pixelation
-          // or maybe stretch to fit container if it's too small?
-          // Safest: Scale DOWN if too big. Scale 1 if fits.
-          // User complaint: "Right side cut off". Means scale was too BIG.
-          // containerWidth might be reported larger than viewport initially or logic flaw?
-          // Let's use `Math.min` carefully.
+          // Get container width
+          // Reduce slightly to account for scrollbars or padding rounding issues
+          const containerWidth = containerRef.current.clientWidth - 2;
 
+          // Calculate scale needed to fit horizontally
+          // We allow scaling UP only if needed, but primarily scaling DOWN
           const scale = containerWidth < originalWidth ? containerWidth / originalWidth : 1;
 
-          canvas.setWidth(originalWidth * scale);
-          canvas.setHeight(originalHeight * scale);
+          // Set display dimensions strictly
+          const finalWidth = originalWidth * scale;
+          const finalHeight = originalHeight * scale;
+
+          canvas.setDimensions({
+            width: finalWidth,
+            height: finalHeight
+          });
+
           canvas.setZoom(scale);
           canvas.renderAll();
         };
 
         // Initial sizing
-        resizeCanvas();
+        // Request animation frame ensures DOM is painted and clientWidth is accurate
+        requestAnimationFrame(resizeCanvas);
 
         // Responsive resizing
         window.addEventListener('resize', resizeCanvas);
 
-        // Cleanup listener on dispose (but we dispose canvas completely below)
-        // We need to attach listener cleanup to the effect cleanup
+        // Cleanup listener on dispose
         (canvas as any).__resizeListener = resizeCanvas;
       });
     } catch (e) {
