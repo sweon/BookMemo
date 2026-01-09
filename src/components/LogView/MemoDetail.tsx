@@ -263,7 +263,14 @@ export const MemoDetail: React.FC = () => {
                 const quoteText = quote.trim();
 
                 if (contentText) {
-                    finalTitle = contentText.slice(0, 30) + (contentText.length > 30 ? '...' : '');
+                    // Check if content starts with fabric drawing code
+                    if (contentText.startsWith('```fabric')) {
+                        finalTitle = language === 'ko' ? '그림' : 'Drawing';
+                        // If there's text after the drawing, maybe use that?
+                        // For now, simple "Drawing" is cleaner than JSON.
+                    } else {
+                        finalTitle = contentText.slice(0, 30) + (contentText.length > 30 ? '...' : '');
+                    }
                 } else if (quoteText) {
                     finalTitle = quoteText.slice(0, 30) + (quoteText.length > 30 ? '...' : '');
                 } else {
