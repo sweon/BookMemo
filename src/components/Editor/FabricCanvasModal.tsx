@@ -119,6 +119,7 @@ const ToolButton = styled.button<{ $active?: boolean }>`
 
 const ToolGroup = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: 1px;
   align-items: center;
 `;
@@ -835,188 +836,190 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                         <ToolButton onClick={handleExtendHeight} title="Extend height">
                             <FiArrowDown size={18} />
                         </ToolButton>
-                        <ToolButton
-                            $active={background !== 'none' || isBgPickerOpen}
-                            onClick={() => setIsBgPickerOpen(!isBgPickerOpen)}
-                            title="Background"
-                        >
-                            <BackgroundIcon />
-                        </ToolButton>
+                        <div style={{ position: 'relative', display: 'flex' }}>
+                            <ToolButton
+                                $active={background !== 'none' || isBgPickerOpen}
+                                onClick={() => setIsBgPickerOpen(!isBgPickerOpen)}
+                                title="Background"
+                            >
+                                <BackgroundIcon />
+                            </ToolButton>
 
-                        {isBgPickerOpen && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: 0,
-                                zIndex: 1000,
-                                background: 'white',
-                                border: '1px solid #ced4da',
-                                borderRadius: '4px',
-                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                                padding: '4px',
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(1, 1fr)',
-                                gap: '2px',
-                                minWidth: '120px'
-                            }}>
-                                <button
-                                    onClick={() => { setBackground('none'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '12px',
-                                        textAlign: 'left',
-                                        background: background === 'none' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    None
-                                </button>
-                                <div style={{ borderTop: '1px solid #eee', margin: '2px 0' }}></div>
-                                <button
-                                    onClick={() => { setBackground('lines-xs'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'lines-xs' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Lines (XS)
-                                </button>
-                                <button
-                                    onClick={() => { setBackground('lines-sm'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'lines-sm' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Lines (Small)
-                                </button>
-                                <button
-                                    onClick={() => { setBackground('lines-md'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'lines-md' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Lines (Medium)
-                                </button>
-                                <button
-                                    onClick={() => { setBackground('lines-lg'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'lines-lg' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Lines (Large)
-                                </button>
-                                <button
-                                    onClick={() => { setBackground('lines-xl'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'lines-xl' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Lines (XL)
-                                </button>
-                                <div style={{ borderTop: '1px solid #eee', margin: '2px 0' }}></div>
-                                <button
-                                    onClick={() => { setBackground('grid-xs'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'grid-xs' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Grid (XS)
-                                </button>
-                                <button
-                                    onClick={() => { setBackground('grid-sm'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'grid-sm' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Grid (Small)
-                                </button>
-                                <button
-                                    onClick={() => { setBackground('grid-md'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'grid-md' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Grid (Medium)
-                                </button>
-                                <button
-                                    onClick={() => { setBackground('grid-lg'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'grid-lg' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Grid (Large)
-                                </button>
-                                <button
-                                    onClick={() => { setBackground('grid-xl'); setIsBgPickerOpen(false); }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        textAlign: 'left',
-                                        background: background === 'grid-xl' ? '#f1f3f5' : 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        borderRadius: '2px'
-                                    }}
-                                >
-                                    Grid (XL)
-                                </button>
-                            </div>
-                        )}
+                            {isBgPickerOpen && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    zIndex: 1000,
+                                    background: 'white',
+                                    border: '1px solid #ced4da',
+                                    borderRadius: '4px',
+                                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                                    padding: '4px',
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(1, 1fr)',
+                                    gap: '2px',
+                                    minWidth: '120px'
+                                }}>
+                                    <button
+                                        onClick={() => { setBackground('none'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '12px',
+                                            textAlign: 'left',
+                                            background: background === 'none' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        None
+                                    </button>
+                                    <div style={{ borderTop: '1px solid #eee', margin: '2px 0' }}></div>
+                                    <button
+                                        onClick={() => { setBackground('lines-xs'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'lines-xs' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Lines (XS)
+                                    </button>
+                                    <button
+                                        onClick={() => { setBackground('lines-sm'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'lines-sm' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Lines (Small)
+                                    </button>
+                                    <button
+                                        onClick={() => { setBackground('lines-md'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'lines-md' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Lines (Medium)
+                                    </button>
+                                    <button
+                                        onClick={() => { setBackground('lines-lg'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'lines-lg' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Lines (Large)
+                                    </button>
+                                    <button
+                                        onClick={() => { setBackground('lines-xl'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'lines-xl' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Lines (XL)
+                                    </button>
+                                    <div style={{ borderTop: '1px solid #eee', margin: '2px 0' }}></div>
+                                    <button
+                                        onClick={() => { setBackground('grid-xs'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'grid-xs' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Grid (XS)
+                                    </button>
+                                    <button
+                                        onClick={() => { setBackground('grid-sm'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'grid-sm' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Grid (Small)
+                                    </button>
+                                    <button
+                                        onClick={() => { setBackground('grid-md'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'grid-md' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Grid (Medium)
+                                    </button>
+                                    <button
+                                        onClick={() => { setBackground('grid-lg'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'grid-lg' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Grid (Large)
+                                    </button>
+                                    <button
+                                        onClick={() => { setBackground('grid-xl'); setIsBgPickerOpen(false); }}
+                                        style={{
+                                            padding: '4px 8px',
+                                            fontSize: '11px',
+                                            textAlign: 'left',
+                                            background: background === 'grid-xl' ? '#f1f3f5' : 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px'
+                                        }}
+                                    >
+                                        Grid (XL)
+                                    </button>
+                                </div>
+                            )}
+                        </div>
 
                         {COLORS.map(c => (
                             <div key={c} style={{
