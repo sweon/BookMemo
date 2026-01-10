@@ -4,22 +4,22 @@ import { fabric } from 'fabric';
 import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType, FiArrowDown, FiTriangle, FiGrid } from 'react-icons/fi';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-// Pixel Eraser Icon - looks like a classic eraser
+// Pixel Eraser Icon - 3D pink block eraser
 const PixelEraserIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 13L11 20H4L2 18C1.4 17.4 1.4 16.6 2 16L14 4L20 10L18 13Z" />
-        <path d="M14 4L20 10" strokeWidth="2.5" />
-        <rect x="2" y="20" width="20" height="2" fill="currentColor" stroke="none" rx="1" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 14L14 3L22 7L13 18L5 14Z" fill="#ffc9c9" />
+        <path d="M5 14L5 19L13 23L13 18" fill="#fa5252" />
+        <path d="M13 23L22 12L22 7" fill="#e03131" />
     </svg>
 );
 
-// Object Eraser Icon - eraser with target/pointer indicator
+// Object Eraser Icon - 3D blue block eraser with indicator
 const ObjectEraserIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 13L11 20H4L2 18C1.4 17.4 1.4 16.6 2 16L14 4L20 10L18 13Z" />
-        <path d="M14 4L20 10" strokeWidth="2.5" />
-        <circle cx="19" cy="5" r="4" fill="#f03e3e" stroke="#f03e3e" strokeWidth="1" />
-        <path d="M19 3V7M17 5H21" stroke="white" strokeWidth="1.5" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 14L14 3L22 7L13 18L5 14Z" fill="#e7f5ff" />
+        <path d="M5 14L5 19L13 23L13 18" fill="#339af0" />
+        <path d="M13 23L22 12L22 7" fill="#1c7ed6" />
+        <circle cx="13" cy="11" r="2.5" fill="#f03e3e" stroke="#f03e3e" strokeWidth="1" />
     </svg>
 );
 
