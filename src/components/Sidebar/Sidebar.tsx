@@ -114,9 +114,7 @@ const Button = styled.button`
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-  flex-shrink: 1;
-  min-width: 0;
-  overflow: hidden;
+  flex-shrink: 0;
   
   &:hover {
     background: ${({ theme }) => theme.colors.primaryHover};
@@ -126,6 +124,7 @@ const Button = styled.button`
     padding: 6px 10px;
     font-size: 14px !important;
     max-height: 36px;
+    min-width: 36px;
   }
 `;
 
@@ -397,7 +396,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               }
             `}</style>
           </Button>
-          <div style={{ display: 'flex', gap: '0rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0rem', alignItems: 'center', flexShrink: 1, minWidth: 0, overflow: 'hidden' }}>
             <Tooltip content={t.sidebar.decrease_font}>
               <IconButton onClick={decreaseFontSize}>
                 <FiMinus size={16} />
