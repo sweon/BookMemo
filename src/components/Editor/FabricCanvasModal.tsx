@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { fabric } from 'fabric';
 import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType, FiArrowDown, FiTriangle, FiMousePointer } from 'react-icons/fi';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
+import { HexColorPicker } from 'react-colorful';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 // Pixel Eraser Icon - 3D pink block eraser
@@ -338,15 +339,6 @@ const ColorInputWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-`;
-
-const CustomColorInput = styled.input`
-  width: 100%;
-  height: 38px;
-  border: none;
-  cursor: pointer;
-  background: none;
-  padding: 0;
 `;
 
 const CustomRangeInput = styled.input<{ $size: number; $opacityValue?: number }>`
@@ -1823,18 +1815,15 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                             onClick={e => e.stopPropagation()}
                         >
                             <ColorInputWrapper>
-                                <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
-                                    <CustomColorInput
-                                        type="color"
-                                        value={tempColor}
-                                        onChange={(e) => {
-                                            setTempColor(e.target.value);
-                                            lastInteractionTimeRef.current = Date.now();
-                                        }}
-                                    />
-
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: '#888', fontWeight: 500, marginTop: '-4px' }}>
+                                <HexColorPicker
+                                    color={tempColor}
+                                    onChange={(newColor) => {
+                                        setTempColor(newColor);
+                                        lastInteractionTimeRef.current = Date.now();
+                                    }}
+                                    style={{ width: '100%', height: '180px' }}
+                                />
+                                <div style={{ fontSize: '0.75rem', color: '#888', fontWeight: 500, marginTop: '8px' }}>
                                     {tempColor.toUpperCase()}
                                 </div>
                             </ColorInputWrapper>
