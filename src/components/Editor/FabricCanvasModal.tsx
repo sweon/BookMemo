@@ -112,6 +112,7 @@ const ToolButton = styled.button<{ $active?: boolean }>`
   font-size: 1rem;
   min-width: 28px;
   height: 28px;
+  touch-action: manipulation;
   
   &:hover {
     background: #e9ecef;
@@ -133,6 +134,7 @@ const ColorButton = styled.div<{ $color: string; $selected?: boolean }>`
   border: 2px solid ${({ $selected }) => $selected ? '#333' : 'transparent'};
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  touch-action: manipulation;
   
   &:hover {
     transform: scale(1.1);
@@ -529,13 +531,17 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     // Double tap detection for mobile
     const lastTapMapRef = useRef<{ [key: string]: number }>({});
-    const handleDoubleTap = (id: string, callback: () => void) => {
+    const handleDoubleTap = (e: React.TouchEvent, id: string, callback: () => void) => {
         const now = Date.now();
         const lastTap = lastTapMapRef.current[id] || 0;
-        if (now - lastTap < 300) {
+        const diff = now - lastTap;
+        if (diff > 0 && diff < 400) {
+            if (e.cancelable) e.preventDefault();
             callback();
+            lastTapMapRef.current[id] = 0;
+        } else {
+            lastTapMapRef.current[id] = now;
         }
-        lastTapMapRef.current[id] = now;
     };
 
     const saveHistory = () => {
@@ -740,9 +746,9 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                         handleShapeToolDoubleClick(item.toolId!);
                                     }
                                 }}
-                                onTouchStart={() => {
+                                onTouchStart={(e) => {
                                     if (['line', 'rect', 'circle', 'ellipse', 'triangle', 'diamond'].includes(item.toolId!)) {
-                                        handleDoubleTap(`tool-${item.toolId}`, () => handleShapeToolDoubleClick(item.toolId!));
+                                        handleDoubleTap(e, `tool-${item.toolId}`, () => handleShapeToolDoubleClick(item.toolId!));
                                     }
                                 }}
                                 title={(item.toolId ?? '').charAt(0).toUpperCase() + (item.toolId ?? '').slice(1)}
@@ -994,7 +1000,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                         }
                                     }}
                                     onDoubleClick={() => handleColorDoubleClick(item.colorIndex!)}
-                                    onTouchStart={() => handleDoubleTap(`color-${item.colorIndex}`, () => handleColorDoubleClick(item.colorIndex!))}
+                                    onTouchStart={(e) => handleDoubleTap(e, `color-${item.colorIndex}`, () => handleColorDoubleClick(item.colorIndex!))}
                                     title="Double-click to change color"
                                 />
                             </div>
@@ -1005,7 +1011,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                 $active={brushSize === availableBrushSizes[item.sizeIndex!]}
                                 onClick={() => setBrushSize(availableBrushSizes[item.sizeIndex!])}
                                 onDoubleClick={() => handleBrushSizeDoubleClick(item.sizeIndex!)}
-                                onTouchStart={() => handleDoubleTap(`size-${item.sizeIndex}`, () => handleBrushSizeDoubleClick(item.sizeIndex!))}
+                                onTouchStart={(e) => handleDoubleTap(e, `size-${item.sizeIndex}`, () => handleBrushSizeDoubleClick(item.sizeIndex!))}
                                 style={{ width: 30, fontSize: '0.8rem', padding: 0 }}
                                 title={`Size: ${availableBrushSizes[item.sizeIndex!]}px (Double-click to change)`}
                             >
