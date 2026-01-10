@@ -194,13 +194,13 @@ const Backdrop = styled.div`
 
 const CompactModal = styled.div`
   background: white;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  min-width: 220px;
+  gap: 0.4rem;
+  min-width: 150px;
 `;
 
 const CompactModalFooter = styled.div`
@@ -211,9 +211,9 @@ const CompactModalFooter = styled.div`
 `;
 
 const CompactModalButton = styled.button<{ $variant?: 'primary' | 'secondary' | 'danger' }>`
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid #dee2e6;
@@ -244,7 +244,7 @@ const CustomColorInput = styled.input`
 const CustomRangeInput = styled.input<{ $size: number }>`
   appearance: none;
   width: 100%;
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   cursor: pointer;
   background: transparent;
 
@@ -290,8 +290,8 @@ const CustomRangeInput = styled.input<{ $size: number }>`
 `;
 
 const CustomNumberInput = styled.input`
-  width: 70px;
-  padding: 0.35rem;
+  width: 50px;
+  padding: 0.2rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 0.9rem;
