@@ -529,14 +529,16 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const historyIndexRef = useRef(-1);
     const isUndoRedoRef = useRef(false); // Prevent saving during undo/redo
 
-    // Double tap detection for mobile
     const lastTapMapRef = useRef<{ [key: string]: number }>({});
+    const openedTimeRef = useRef<number>(0);
+
     const handleDoubleTap = (e: React.TouchEvent, id: string, callback: () => void) => {
         const now = Date.now();
         const lastTap = lastTapMapRef.current[id] || 0;
         const diff = now - lastTap;
         if (diff > 0 && diff < 400) {
             if (e.cancelable) e.preventDefault();
+            openedTimeRef.current = now; // Record open time for ghost click prevention
             callback();
             lastTapMapRef.current[id] = 0;
         } else {
@@ -630,6 +632,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const handleColorDoubleClick = (index: number) => {
         setEditingColorIndex(index);
         setTempColor(availableColors[index]);
+        openedTimeRef.current = Date.now();
         setIsColorEditOpen(true);
     };
 
@@ -658,6 +661,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const handleBrushSizeDoubleClick = (index: number) => {
         setEditingSizeIndex(index);
         setTempSize(availableBrushSizes[index]);
+        openedTimeRef.current = Date.now();
         setIsSizeEditOpen(true);
     };
 
@@ -1490,7 +1494,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                     </DragDropContext>
                 </Toolbar>
                 {isColorEditOpen && (
-                    <Backdrop onClick={handleColorCancel}>
+                    <Backdrop onClick={(e) => {
+                        const now = Date.now();
+                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                        if (e.target === e.currentTarget) handleColorCancel();
+                    }}>
                         <CompactModal onClick={e => e.stopPropagation()}>
                             <ColorInputWrapper>
                                 <CustomColorInput
@@ -1518,7 +1526,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                 )}
 
                 {isSizeEditOpen && (
-                    <Backdrop onClick={handleSizeCancel}>
+                    <Backdrop onClick={(e) => {
+                        const now = Date.now();
+                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                        if (e.target === e.currentTarget) handleSizeCancel();
+                    }}>
                         <CompactModal onClick={e => e.stopPropagation()}>
                             <ColorInputWrapper>
                                 <CustomRangeInput
@@ -1554,7 +1566,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                     </Backdrop>
                 )}
                 {isShapeSettingsOpen && (
-                    <Backdrop onClick={handleShapeSettingsCancel}>
+                    <Backdrop onClick={(e) => {
+                        const now = Date.now();
+                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                        if (e.target === e.currentTarget) handleShapeSettingsCancel();
+                    }}>
                         <CompactModal onClick={e => e.stopPropagation()} style={{ minWidth: '160px' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 {DASH_OPTIONS.map((dash, index) => (
