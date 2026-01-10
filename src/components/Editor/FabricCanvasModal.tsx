@@ -30,6 +30,27 @@ const EllipseIcon = () => (
     </svg>
 );
 
+const SprayBrushIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+        <circle cx="16" cy="8" r="1" fill="currentColor" stroke="none" />
+        <circle cx="8" cy="16" r="1" fill="currentColor" stroke="none" />
+        <circle cx="17" cy="16" r="0.8" fill="currentColor" stroke="none" />
+        <circle cx="7" cy="8" r="0.8" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="6" r="0.5" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="18" r="0.5" fill="currentColor" stroke="none" />
+        <circle cx="6" cy="12" r="0.5" fill="currentColor" stroke="none" />
+        <circle cx="18" cy="12" r="0.5" fill="currentColor" stroke="none" />
+    </svg>
+);
+
+const CircleBrushIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="9" r="4" />
+        <circle cx="15" cy="15" r="5" />
+    </svg>
+);
+
 const DiamondIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2L2 12L12 22L22 12L12 2Z" />
@@ -527,6 +548,16 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         localStorage.setItem('fabric_shape_styles', JSON.stringify(shapeStyles));
     }, [shapeStyles]);
 
+    const [brushType, setBrushType] = useState<'pencil' | 'spray' | 'circle'>(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (localStorage.getItem('fabric_brush_type') as any) || 'pencil';
+    });
+    const [isPenEditOpen, setIsPenEditOpen] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('fabric_brush_type', brushType);
+    }, [brushType]);
+
     // Shape drawing refs
     const isDrawingRef = useRef(false);
     const startPointRef = useRef<{ x: number, y: number } | null>(null);
@@ -540,6 +571,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const lastTapMapRef = useRef<{ [key: string]: number }>({});
     const openedTimeRef = useRef<number>(0);
     const [settingsAnchor, setSettingsAnchor] = useState<{ top: number } | null>(null);
+
 
     const handleDoubleTap = (e: React.TouchEvent, id: string, callback: (e: React.TouchEvent | React.MouseEvent) => void) => {
         const now = Date.now();
@@ -744,6 +776,19 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         setIsShapeSettingsOpen(false);
     };
 
+    const handlePenDoubleClick = (e: React.MouseEvent | React.TouchEvent) => {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setSettingsAnchor({
+            top: rect.bottom + 5
+        });
+        setIsPenEditOpen(true);
+    };
+
+    const handlePenCancel = () => {
+        setSettingsAnchor(null);
+        setIsPenEditOpen(false);
+    };
+
     const handleDragEnd = (result: DropResult) => {
         if (!result.destination) return;
 
@@ -773,12 +818,16 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                 $active={activeTool === item.toolId}
                                 onClick={() => setActiveTool(item.toolId!)}
                                 onDoubleClick={(e) => {
-                                    if (['line', 'rect', 'circle', 'ellipse', 'triangle', 'diamond'].includes(item.toolId!)) {
+                                    if (item.toolId === 'pen') {
+                                        handlePenDoubleClick(e);
+                                    } else if (['line', 'rect', 'circle', 'ellipse', 'triangle', 'diamond'].includes(item.toolId!)) {
                                         handleShapeToolDoubleClick(e, item.toolId!);
                                     }
                                 }}
                                 onTouchStart={(e) => {
-                                    if (['line', 'rect', 'circle', 'ellipse', 'triangle', 'diamond'].includes(item.toolId!)) {
+                                    if (item.toolId === 'pen') {
+                                        handleDoubleTap(e, `tool-${item.toolId}`, (ev) => handlePenDoubleClick(ev));
+                                    } else if (['line', 'rect', 'circle', 'ellipse', 'triangle', 'diamond'].includes(item.toolId!)) {
                                         handleDoubleTap(e, `tool-${item.toolId}`, (ev) => handleShapeToolDoubleClick(ev, item.toolId!));
                                     }
                                 }}
@@ -1380,7 +1429,15 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
             case 'pen':
                 canvas.isDrawingMode = true;
-                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                if (brushType === 'spray') {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    canvas.freeDrawingBrush = new (fabric as any).SprayBrush(canvas);
+                } else if (brushType === 'circle') {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    canvas.freeDrawingBrush = new (fabric as any).CircleBrush(canvas);
+                } else {
+                    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                }
                 canvas.freeDrawingBrush.color = color;
                 canvas.freeDrawingBrush.width = brushSize;
                 canvas.defaultCursor = 'crosshair';
@@ -1472,7 +1529,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                 break;
         }
 
-    }, [activeTool, color, brushSize, shapeStyles, handleShapeMouseDown, handleShapeMouseMove, handleShapeMouseUp]);
+    }, [activeTool, color, brushSize, shapeStyles, brushType, handleShapeMouseDown, handleShapeMouseMove, handleShapeMouseUp]);
 
     // Handle background change
     useEffect(() => {
@@ -1651,6 +1708,52 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     </CompactModalButton>
                                 </div>
                             </CompactModalFooter>
+                        </CompactModal>
+                    </Backdrop>
+                )}
+
+                {isPenEditOpen && (
+                    <Backdrop
+                        $centered={!settingsAnchor}
+                        onClick={(e) => {
+                            const now = Date.now();
+                            if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                            if (e.target === e.currentTarget) handlePenCancel();
+                        }}>
+                        <CompactModal
+                            $anchor={settingsAnchor || undefined}
+                            onClick={e => e.stopPropagation()}
+                            style={{ minWidth: '150px' }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <DashOption
+                                    $active={brushType === 'pencil'}
+                                    onClick={() => { setBrushType('pencil'); setIsPenEditOpen(false); }}
+                                    style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
+                                >
+                                    <FiEdit2 size={16} />
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span style={{ fontSize: '0.8rem' }}>{(t.drawing as any)?.pen_pencil || 'Pencil'}</span>
+                                </DashOption>
+                                <DashOption
+                                    $active={brushType === 'spray'}
+                                    onClick={() => { setBrushType('spray'); setIsPenEditOpen(false); }}
+                                    style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
+                                >
+                                    <SprayBrushIcon />
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span style={{ fontSize: '0.8rem' }}>{(t.drawing as any)?.pen_spray || 'Spray'}</span>
+                                </DashOption>
+                                <DashOption
+                                    $active={brushType === 'circle'}
+                                    onClick={() => { setBrushType('circle'); setIsPenEditOpen(false); }}
+                                    style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
+                                >
+                                    <CircleBrushIcon />
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span style={{ fontSize: '0.8rem' }}>{(t.drawing as any)?.pen_circle || 'Bubble'}</span>
+                                </DashOption>
+                            </div>
                         </CompactModal>
                     </Backdrop>
                 )}
