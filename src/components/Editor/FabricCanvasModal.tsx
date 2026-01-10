@@ -449,6 +449,17 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const historyIndexRef = useRef(-1);
     const isUndoRedoRef = useRef(false); // Prevent saving during undo/redo
 
+    // Double tap detection for mobile
+    const lastTapMapRef = useRef<{ [key: string]: number }>({});
+    const handleDoubleTap = (id: string, callback: () => void) => {
+        const now = Date.now();
+        const lastTap = lastTapMapRef.current[id] || 0;
+        if (now - lastTap < 300) {
+            callback();
+        }
+        lastTapMapRef.current[id] = now;
+    };
+
     const saveHistory = () => {
         if (isUndoRedoRef.current) return;
         const canvas = fabricCanvasRef.current;
@@ -864,6 +875,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                         }
                                     }}
                                     onDoubleClick={() => handleColorDoubleClick(item.colorIndex!)}
+                                    onTouchStart={() => handleDoubleTap(`color-${item.colorIndex}`, () => handleColorDoubleClick(item.colorIndex!))}
                                     title="Double-click to change color"
                                 />
                             </div>
@@ -874,6 +886,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                 $active={brushSize === availableBrushSizes[item.sizeIndex!]}
                                 onClick={() => setBrushSize(availableBrushSizes[item.sizeIndex!])}
                                 onDoubleClick={() => handleBrushSizeDoubleClick(item.sizeIndex!)}
+                                onTouchStart={() => handleDoubleTap(`size-${item.sizeIndex}`, () => handleBrushSizeDoubleClick(item.sizeIndex!))}
                                 style={{ width: 30, fontSize: '0.8rem', padding: 0 }}
                                 title={`Size: ${availableBrushSizes[item.sizeIndex!]}px (Double-click to change)`}
                             >
