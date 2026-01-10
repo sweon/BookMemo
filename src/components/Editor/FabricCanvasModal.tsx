@@ -226,7 +226,7 @@ const CompactModal = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  min-width: 150px;
+  min-width: 110px;
 `;
 
 const CompactModalFooter = styled.div`
@@ -267,7 +267,7 @@ const CustomColorInput = styled.input`
   padding: 0;
 `;
 
-const CustomRangeInput = styled.input<{ $size: number }>`
+const CustomRangeInput = styled.input<{ $size: number; $opacityValue?: number }>`
   appearance: none;
   width: 100%;
   margin: 1rem 0;
@@ -277,7 +277,9 @@ const CustomRangeInput = styled.input<{ $size: number }>`
   &::-webkit-slider-runnable-track {
     width: 100%;
     height: ${({ $size }) => Math.min($size, 100)}px;
-    background: #dee2e6;
+    background: ${({ $opacityValue }) => $opacityValue !== undefined
+        ? 'linear-gradient(to right, #eee, #333)'
+        : '#dee2e6'};
     border-radius: ${({ $size }) => Math.min($size, 100) / 2}px;
   }
 
@@ -287,6 +289,7 @@ const CustomRangeInput = styled.input<{ $size: number }>`
     width: ${({ $size }) => Math.max(Math.min($size, 100) + 10, 24)}px;
     border-radius: 50%;
     background: #333;
+    opacity: ${({ $opacityValue }) => $opacityValue !== undefined ? Math.max($opacityValue / 100, 0.1) : 1};
     cursor: pointer;
     margin-top: ${({ $size }) => (Math.min($size, 100) / 2) - (Math.max(Math.min($size, 100) + 10, 24) / 2)}px;
     border: 2px solid white;
@@ -296,7 +299,9 @@ const CustomRangeInput = styled.input<{ $size: number }>`
   &::-moz-range-track {
     width: 100%;
     height: ${({ $size }) => Math.min($size, 100)}px;
-    background: #dee2e6;
+    background: ${({ $opacityValue }) => $opacityValue !== undefined
+        ? 'linear-gradient(to right, #eee, #333)'
+        : '#dee2e6'};
     border-radius: ${({ $size }) => Math.min($size, 100) / 2}px;
   }
 
@@ -305,6 +310,7 @@ const CustomRangeInput = styled.input<{ $size: number }>`
     width: ${({ $size }) => Math.max(Math.min($size, 100) + 10, 24)}px;
     border-radius: 50%;
     background: #333;
+    opacity: ${({ $opacityValue }) => $opacityValue !== undefined ? Math.max($opacityValue / 100, 0.1) : 1};
     cursor: pointer;
     border: 2px solid white;
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -1514,6 +1520,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     min="10"
                                     max="100"
                                     $size={10}
+                                    $opacityValue={tempShapeOpacity}
                                     value={tempShapeOpacity}
                                     onChange={(e) => setTempShapeOpacity(parseInt(e.target.value))}
                                 />
