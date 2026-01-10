@@ -2332,7 +2332,7 @@ gl_FragColor.rgb *= color.a;
     outline: none;
   }
 `,J3e=Yt.input`
-  width: 50px;
+  width: 65px;
   padding: 0.2rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
