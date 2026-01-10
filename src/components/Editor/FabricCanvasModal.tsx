@@ -237,8 +237,8 @@ const DashPreview = styled.div<{ $dash: number[] | null }>`
   ${({ $dash }) => $dash && $dash.length > 2 && `border-top: 2px dashed #333;`}
 `;
 
-const BrushSample = styled.div<{ $type: string; $color: string }>`
-  height: 12px;
+const BrushSample = styled.div<{ $type: string; $color: string; $size?: number }>`
+  height: ${({ $size }) => $size ? Math.max(2, Math.min(24, $size)) : 12}px;
   flex: 1;
   margin-left: 12px;
   border-radius: 2px;
@@ -2236,7 +2236,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <FiMinus size={18} />
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_pen || 'Pen'}</span>
-                                    <BrushSample $type="pen" $color={color} />
+                                    <BrushSample
+                                        $type="pen"
+                                        $color={toolSettings['pen']?.color || color}
+                                        $size={toolSettings['pen']?.size || brushSize}
+                                    />
                                 </DashOption>
                                 <DashOption
                                     $active={tempBrushType === 'pencil'}
@@ -2246,7 +2250,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <FiEdit2 size={18} />
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_pencil || 'Pencil'}</span>
-                                    <BrushSample $type="pencil" $color={color} />
+                                    <BrushSample
+                                        $type="pencil"
+                                        $color={toolSettings['pencil']?.color || color}
+                                        $size={toolSettings['pencil']?.size || brushSize}
+                                    />
                                 </DashOption>
                                 <DashOption
                                     $active={tempBrushType === 'highlighter'}
@@ -2256,7 +2264,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <HighlighterIcon />
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_highlighter || 'Highlight'}</span>
-                                    <BrushSample $type="highlighter" $color={color} />
+                                    <BrushSample
+                                        $type="highlighter"
+                                        $color={toolSettings['highlighter']?.color || color}
+                                        $size={(toolSettings['highlighter']?.size || brushSize) * 2}
+                                    />
                                 </DashOption>
                                 <DashOption
                                     $active={tempBrushType === 'glow'}
@@ -2266,7 +2278,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <GlowIcon />
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_glow || 'Glow'}</span>
-                                    <BrushSample $type="glow" $color={color} />
+                                    <BrushSample
+                                        $type="glow"
+                                        $color={toolSettings['glow']?.color || color}
+                                        $size={toolSettings['glow']?.size || brushSize}
+                                    />
                                 </DashOption>
                                 <DashOption
                                     $active={tempBrushType === 'spray'}
@@ -2276,7 +2292,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <SprayBrushIcon />
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_spray || 'Spray'}</span>
-                                    <BrushSample $type="spray" $color={color} />
+                                    <BrushSample
+                                        $type="spray"
+                                        $color={toolSettings['spray']?.color || color}
+                                        $size={toolSettings['spray']?.size || brushSize}
+                                    />
                                 </DashOption>
                                 <DashOption
                                     $active={tempBrushType === 'circle'}
@@ -2286,7 +2306,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <CircleBrushIcon />
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_circle || 'Bubble'}</span>
-                                    <BrushSample $type="circle" $color={color} />
+                                    <BrushSample
+                                        $type="circle"
+                                        $color={toolSettings['circle']?.color || color}
+                                        $size={toolSettings['circle']?.size || brushSize}
+                                    />
                                 </DashOption>
                             </div>
                             <CompactModalFooter>
