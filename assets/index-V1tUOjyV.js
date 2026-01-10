@@ -2276,7 +2276,7 @@ gl_FragColor.rgb *= color.a;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  min-width: 110px;
+  min-width: 85px;
 `,DS=Vt.div`
   display: flex;
   justify-content: space-between;
