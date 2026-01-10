@@ -179,6 +179,32 @@ const ActionButton = styled.button<{ $primary?: boolean }>`
   }
 `;
 
+const DashPreview = styled.div<{ $dash: number[] | null }>`
+  width: 100%;
+  height: 2px;
+  background: transparent;
+  border-top: 2px ${({ $dash }) => $dash ? 'dashed' : 'solid'} #333;
+  ${({ $dash }) => $dash && `border-image: repeating-linear-gradient(to right, #333, #333 ${$dash[0]}px, transparent ${$dash[0]}px, transparent ${$dash[0] + $dash[1]}px) 1;`}
+  /* Simple fallback for complex dashes */
+  ${({ $dash }) => $dash && $dash.length > 2 && `border-top: 2px dashed #333;`}
+`;
+
+const DashOption = styled.button<{ $active: boolean }>`
+  width: 100%;
+  height: 24px;
+  padding: 4px 8px;
+  border: 1px solid ${({ $active }) => $active ? '#333' : '#e0e0e0'};
+  background: ${({ $active }) => $active ? '#f1f3f5' : 'white'};
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  
+  &:hover {
+    background: #f8f9fa;
+  }
+`;
+
 const Backdrop = styled.div`
   position: fixed;
   top: 0;
@@ -311,6 +337,17 @@ interface FabricCanvasModalProps {
 
 const INITIAL_COLORS = ['#000000', '#e03131', '#2f9e44', '#1971c2', '#f08c00', '#9c36b5'];
 const INITIAL_BRUSH_SIZES = [2, 4, 8, 16];
+const DASH_OPTIONS: (number[] | undefined)[] = [
+    undefined,
+    [5, 5],
+    [10, 5],
+    [2, 2],
+    [15, 5, 5, 5],
+    [20, 10],
+    [5, 10]
+];
+const INITIAL_SHAPE_OPACITY = 100;
+const INITIAL_SHAPE_DASH = 0; // Index in DASH_OPTIONS
 
 type ToolbarItem = {
     id: string;
@@ -426,6 +463,18 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const [tempSize, setTempSize] = useState(2);
     const [editingSizeIndex, setEditingSizeIndex] = useState<number | null>(null);
 
+    const [shapeDashArray, setShapeDashArray] = useState<number[] | undefined>(() => {
+        const saved = localStorage.getItem('fabric_shape_dash');
+        return saved ? JSON.parse(saved) : DASH_OPTIONS[INITIAL_SHAPE_DASH];
+    });
+    const [shapeOpacity, setShapeOpacity] = useState<number>(() => {
+        const saved = localStorage.getItem('fabric_shape_opacity');
+        return saved ? parseInt(saved) : INITIAL_SHAPE_OPACITY;
+    });
+    const [isShapeSettingsOpen, setIsShapeSettingsOpen] = useState(false);
+    const [tempDashIndex, setTempDashIndex] = useState(0);
+    const [tempShapeOpacity, setTempShapeOpacity] = useState(100);
+
     // Save customized settings
     useEffect(() => {
         localStorage.setItem('fabric_colors', JSON.stringify(availableColors));
@@ -438,6 +487,14 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     useEffect(() => {
         localStorage.setItem('fabric_toolbar_order', JSON.stringify(toolbarItems));
     }, [toolbarItems]);
+
+    useEffect(() => {
+        localStorage.setItem('fabric_shape_dash', JSON.stringify(shapeDashArray));
+    }, [shapeDashArray]);
+
+    useEffect(() => {
+        localStorage.setItem('fabric_shape_opacity', shapeOpacity.toString());
+    }, [shapeOpacity]);
 
     // Shape drawing refs
     const isDrawingRef = useRef(false);
@@ -599,6 +656,28 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         setEditingSizeIndex(null);
     };
 
+    const handleShapeToolDoubleClick = () => {
+        const currentIndex = DASH_OPTIONS.findIndex(d => JSON.stringify(d) === JSON.stringify(shapeDashArray));
+        setTempDashIndex(currentIndex === -1 ? 0 : currentIndex);
+        setTempShapeOpacity(shapeOpacity);
+        setIsShapeSettingsOpen(true);
+    };
+
+    const handleShapeSettingsOk = () => {
+        setShapeDashArray(DASH_OPTIONS[tempDashIndex]);
+        setShapeOpacity(tempShapeOpacity);
+        setIsShapeSettingsOpen(false);
+    };
+
+    const handleShapeSettingsReset = () => {
+        setTempDashIndex(0);
+        setTempShapeOpacity(100);
+    };
+
+    const handleShapeSettingsCancel = () => {
+        setIsShapeSettingsOpen(false);
+    };
+
     const handleDragEnd = (result: DropResult) => {
         if (!result.destination) return;
 
@@ -627,6 +706,16 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                             <ToolButton
                                 $active={activeTool === item.toolId}
                                 onClick={() => setActiveTool(item.toolId!)}
+                                onDoubleClick={() => {
+                                    if (['line', 'rect', 'circle', 'ellipse', 'triangle', 'diamond'].includes(item.toolId!)) {
+                                        handleShapeToolDoubleClick();
+                                    }
+                                }}
+                                onTouchStart={() => {
+                                    if (['line', 'rect', 'circle', 'ellipse', 'triangle', 'diamond'].includes(item.toolId!)) {
+                                        handleDoubleTap(`tool-${item.toolId}`, handleShapeToolDoubleClick);
+                                    }
+                                }}
                                 title={(item.toolId ?? '').charAt(0).toUpperCase() + (item.toolId ?? '').slice(1)}
                             >
                                 {item.toolId === 'pen' && <FiEdit2 size={18} />}
@@ -917,6 +1006,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         const commonProps = {
             stroke: color,
             strokeWidth: brushSize,
+            strokeDashArray: shapeDashArray,
+            opacity: shapeOpacity / 100,
             fill: 'transparent',
             left: pointer.x,
             top: pointer.y,
@@ -967,7 +1058,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
             activeShapeRef.current = shape;
             canvas.add(shape);
         }
-    }, [activeTool, color, brushSize]);
+    }, [activeTool, color, brushSize, shapeDashArray, shapeOpacity]);
 
     const handleShapeMouseMove = React.useCallback((opt: fabric.IEvent) => {
         if (!isDrawingRef.current || !activeShapeRef.current || !startPointRef.current) return;
@@ -1395,6 +1486,50 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                         {t.drawing?.cancel || 'Cancel'}
                                     </CompactModalButton>
                                     <CompactModalButton onClick={handleSizeOk} $variant="primary">
+                                        {t.drawing?.ok || 'OK'}
+                                    </CompactModalButton>
+                                </div>
+                            </CompactModalFooter>
+                        </CompactModal>
+                    </Backdrop>
+                )}
+                {isShapeSettingsOpen && (
+                    <Backdrop onClick={handleShapeSettingsCancel}>
+                        <CompactModal onClick={e => e.stopPropagation()} style={{ minWidth: '160px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {DASH_OPTIONS.map((dash, index) => (
+                                    <DashOption
+                                        key={index}
+                                        $active={tempDashIndex === index}
+                                        onClick={() => setTempDashIndex(index)}
+                                    >
+                                        <DashPreview $dash={dash || null} />
+                                    </DashOption>
+                                ))}
+                            </div>
+                            <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
+                            <ColorInputWrapper>
+                                <CustomRangeInput
+                                    type="range"
+                                    min="10"
+                                    max="100"
+                                    $size={10}
+                                    value={tempShapeOpacity}
+                                    onChange={(e) => setTempShapeOpacity(parseInt(e.target.value))}
+                                />
+                                <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 500 }}>
+                                    {tempShapeOpacity}%
+                                </div>
+                            </ColorInputWrapper>
+                            <CompactModalFooter>
+                                <CompactModalButton onClick={handleShapeSettingsReset}>
+                                    {t.drawing?.reset || 'Reset'}
+                                </CompactModalButton>
+                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                    <CompactModalButton onClick={handleShapeSettingsCancel}>
+                                        {t.drawing?.cancel || 'Cancel'}
+                                    </CompactModalButton>
+                                    <CompactModalButton onClick={handleShapeSettingsOk} $variant="primary">
                                         {t.drawing?.ok || 'OK'}
                                     </CompactModalButton>
                                 </div>
