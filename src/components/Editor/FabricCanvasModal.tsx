@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import styled from 'styled-components';
 import { fabric } from 'fabric';
-import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType, FiArrowDown, FiTriangle } from 'react-icons/fi';
+import { FiX, FiCheck, FiTrash2, FiEdit2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType, FiArrowDown, FiTriangle, FiMousePointer } from 'react-icons/fi';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -365,6 +365,7 @@ type ToolbarItem = {
 };
 
 const INITIAL_TOOLBAR_ITEMS: ToolbarItem[] = [
+    { id: 'select', type: 'tool', toolId: 'select' },
     { id: 'pen', type: 'tool', toolId: 'pen' },
     { id: 'line', type: 'tool', toolId: 'line' },
     { id: 'rect', type: 'tool', toolId: 'rect' },
@@ -392,7 +393,7 @@ const INITIAL_TOOLBAR_ITEMS: ToolbarItem[] = [
     { id: 'size-3', type: 'size', sizeIndex: 3 },
 ];
 
-type ToolType = 'pen' | 'eraser_pixel' | 'eraser_object' | 'line' | 'rect' | 'circle' | 'text' | 'triangle' | 'ellipse' | 'diamond';
+type ToolType = 'select' | 'pen' | 'eraser_pixel' | 'eraser_object' | 'line' | 'rect' | 'circle' | 'text' | 'triangle' | 'ellipse' | 'diamond';
 type BackgroundType = 'none' | 'lines-xs' | 'lines-sm' | 'lines-md' | 'lines-lg' | 'lines-xl' | 'grid-xs' | 'grid-sm' | 'grid-md' | 'grid-lg' | 'grid-xl';
 
 const createBackgroundPattern = (type: BackgroundType) => {
@@ -453,7 +454,19 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     });
     const [toolbarItems, setToolbarItems] = useState<ToolbarItem[]>(() => {
         const saved = localStorage.getItem('fabric_toolbar_order');
-        return saved ? JSON.parse(saved) : INITIAL_TOOLBAR_ITEMS;
+        if (!saved) return INITIAL_TOOLBAR_ITEMS;
+
+        const parsed: ToolbarItem[] = JSON.parse(saved);
+        // Check if all tools from INITIAL_TOOLBAR_ITEMS are present (specifically the new 'select' tool)
+        const missingItems = INITIAL_TOOLBAR_ITEMS.filter(initialItem =>
+            !parsed.some(parsedItem => parsedItem.id === initialItem.id)
+        );
+
+        if (missingItems.length > 0) {
+            // Add missing items to the front
+            return [...missingItems, ...parsed];
+        }
+        return parsed;
     });
     const [activeTool, setActiveTool] = useState<ToolType>('pen');
     const [color, setColor] = useState('#000000');
@@ -724,6 +737,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                 }}
                                 title={(item.toolId ?? '').charAt(0).toUpperCase() + (item.toolId ?? '').slice(1)}
                             >
+                                {item.toolId === 'select' && <FiMousePointer size={18} />}
                                 {item.toolId === 'pen' && <FiEdit2 size={18} />}
                                 {item.toolId === 'line' && <FiMinus size={18} style={{ transform: 'rotate(-45deg)' }} />}
                                 {item.toolId === 'rect' && <FiSquare size={18} />}
@@ -1288,6 +1302,15 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         canvas.defaultCursor = 'default';
         canvas.hoverCursor = 'default';
 
+        // Disable selection on all objects by default
+        canvas.forEachObject((obj) => {
+            obj.set({
+                selectable: false,
+                evented: true,
+                hoverCursor: 'default'
+            });
+        });
+
         // Remove object erasing listener if present (we'll re-add if needed)
         canvas.off('mouse:down');
         canvas.off('mouse:move');
@@ -1296,6 +1319,20 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         // Re-attach standard listeners if needed (none strictly for now unless shape)
 
         switch (activeTool) {
+            case 'select':
+                canvas.isDrawingMode = false;
+                canvas.selection = true;
+                canvas.defaultCursor = 'default';
+                canvas.forEachObject((obj) => {
+                    obj.set({
+                        selectable: true,
+                        evented: true,
+                        hoverCursor: 'move'
+                    });
+                });
+                canvas.requestRenderAll();
+                break;
+
             case 'pen':
                 canvas.isDrawingMode = true;
                 canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
