@@ -1110,35 +1110,34 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         const start = startPointRef.current;
         const shape = activeShapeRef.current;
 
+        const left = Math.min(start.x, pointer.x);
+        const top = Math.min(start.y, pointer.y);
+        const width = Math.abs(pointer.x - start.x);
+        const height = Math.abs(pointer.y - start.y);
+
         if (activeTool === 'line') {
             (shape as fabric.Line).set({ x2: pointer.x, y2: pointer.y });
         } else if (activeTool === 'rect') {
-            const width = Math.abs(pointer.x - start.x);
-            const height = Math.abs(pointer.y - start.y);
-            const left = Math.min(start.x, pointer.x);
-            const top = Math.min(start.y, pointer.y);
-            shape.set({ width, height, left, top });
+            shape.set({ left, top, width, height });
         } else if (activeTool === 'circle') {
-            const dist = Math.sqrt(Math.pow(pointer.x - start.x, 2) + Math.pow(pointer.y - start.y, 2));
-            (shape as fabric.Circle).set({ radius: dist });
+            const radius = Math.max(width, height) / 2;
+            const circleLeft = start.x + (pointer.x < start.x ? -radius * 2 : 0);
+            const circleTop = start.y + (pointer.y < start.y ? -radius * 2 : 0);
+            (shape as fabric.Circle).set({
+                radius,
+                left: circleLeft,
+                top: circleTop
+            });
         } else if (activeTool === 'triangle') {
-            const width = Math.abs(pointer.x - start.x);
-            const height = Math.abs(pointer.y - start.y);
-            const left = Math.min(start.x, pointer.x);
-            const top = Math.min(start.y, pointer.y);
-            shape.set({ width, height, left, top });
+            shape.set({ left, top, width, height });
         } else if (activeTool === 'ellipse') {
-            const rx = Math.abs(pointer.x - start.x) / 2;
-            const ry = Math.abs(pointer.y - start.y) / 2;
-            const left = Math.min(start.x, pointer.x);
-            const top = Math.min(start.y, pointer.y);
-            (shape as fabric.Ellipse).set({ rx, ry, left, top });
+            (shape as fabric.Ellipse).set({
+                rx: width / 2,
+                ry: height / 2,
+                left,
+                top
+            });
         } else if (activeTool === 'diamond') {
-            const width = Math.abs(pointer.x - start.x);
-            const height = Math.abs(pointer.y - start.y);
-            const left = Math.min(start.x, pointer.x);
-            const top = Math.min(start.y, pointer.y);
-
             const points = [
                 new fabric.Point(width / 2, 0),        // Top
                 new fabric.Point(width, height / 2),   // Right
@@ -1146,20 +1145,18 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                 new fabric.Point(0, height / 2)        // Left
             ];
 
-            (shape as fabric.Polygon).set({ points });
+            (shape as fabric.Polygon).set({
+                points,
+                left,
+                top,
+                width,
+                height
+            });
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (shape as any)._setPositionDimensions({});
-
-            shape.set({
-                left: left,
-                top: top,
-                width: width,
-                height: height
-            });
-
-            shape.setCoords();
         }
 
+        shape.setCoords();
         canvas.requestRenderAll();
     }, [activeTool]);
 
