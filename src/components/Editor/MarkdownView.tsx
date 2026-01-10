@@ -176,12 +176,13 @@ const FabricPreview = ({ json }: { json: string }) => {
     <div
       ref={containerRef}
       style={{
-        width: '100%',
+        width: 'calc(100% + 64px)',
+        marginLeft: '-32px',
+        marginRight: '-32px',
         overflow: 'hidden',
-        margin: '1.5em 0',
         background: '#fff',
         border: '1px solid #eee',
-        borderRadius: '8px',
+        borderRadius: '0',
         display: 'flex',
         justifyContent: 'center'
       }}

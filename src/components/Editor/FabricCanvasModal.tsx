@@ -727,7 +727,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         const height = containerRef.current.clientHeight;
 
         const canvas = new fabric.Canvas(canvasRef.current, {
-            width: width - 20, // Leave some room for potential scrollbar
+            width: width,
             height,
             backgroundColor: '#ffffff',
             isDrawingMode: true,
