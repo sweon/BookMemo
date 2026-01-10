@@ -389,7 +389,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             setIsAddBookModalOpen(true);
             onCloseMobile();
           }}>
-            <FiPlus /> {t.sidebar.add_book || "New Book"}
+            <FiPlus />
+            <span className="add-book-text">{t.sidebar.add_book || "New Book"}</span>
+            <style>{`
+              @media (max-width: 768px) {
+                .add-book-text { display: none !important; }
+              }
+            `}</style>
           </Button>
           <div style={{ display: 'flex', gap: '0rem', alignItems: 'center' }}>
             <Tooltip content={t.sidebar.decrease_font}>
