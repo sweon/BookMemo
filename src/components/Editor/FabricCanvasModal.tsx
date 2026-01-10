@@ -639,9 +639,12 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     const handleColorDoubleClick = (e: React.MouseEvent | React.TouchEvent, index: number) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const modalWidth = 110;
+        let leftVal = rect.left + (rect.width / 2) - (modalWidth / 2);
+        leftVal = Math.max(10, Math.min(leftVal, window.innerWidth - modalWidth - 10));
         setSettingsAnchor({
             top: rect.bottom + 5,
-            left: Math.max(10, Math.min(rect.left, window.innerWidth - 130))
+            left: leftVal
         });
         setEditingColorIndex(index);
         setTempColor(availableColors[index]);
@@ -675,9 +678,12 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     const handleBrushSizeDoubleClick = (e: React.MouseEvent | React.TouchEvent, index: number) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const modalWidth = 110;
+        let leftVal = rect.left + (rect.width / 2) - (modalWidth / 2);
+        leftVal = Math.max(10, Math.min(leftVal, window.innerWidth - modalWidth - 10));
         setSettingsAnchor({
             top: rect.bottom + 5,
-            left: Math.max(10, Math.min(rect.left, window.innerWidth - 130))
+            left: leftVal
         });
         setEditingSizeIndex(index);
         setTempSize(availableBrushSizes[index]);
@@ -711,9 +717,12 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     const handleShapeToolDoubleClick = (e: React.MouseEvent | React.TouchEvent, toolId: string) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const modalWidth = 160;
+        let left = rect.left + (rect.width / 2) - (modalWidth / 2);
+        left = Math.max(10, Math.min(left, window.innerWidth - modalWidth - 10));
         setSettingsAnchor({
             top: rect.bottom + 5,
-            left: Math.max(10, Math.min(rect.left, window.innerWidth - 180)) // Shape modal is wider
+            left: left
         });
         const style = shapeStyles[toolId] || DEFAULT_SHAPE_STYLE;
         const currentIndex = DASH_OPTIONS.findIndex(d => JSON.stringify(d) === JSON.stringify(style.dashArray));
