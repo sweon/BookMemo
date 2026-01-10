@@ -834,9 +834,7 @@ Please change the parent <Route path="${O}"> to <Route path="${O==="/"?"*":`${O}
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-  flex-shrink: 1;
-  min-width: 0;
-  overflow: hidden;
+  flex-shrink: 0;
   
   &:hover {
     background: ${({theme:e})=>e.colors.primaryHover};
@@ -846,6 +844,7 @@ Please change the parent <Route path="${O}"> to <Route path="${O==="/"?"*":`${O}
     padding: 6px 10px;
     font-size: 14px !important;
     max-height: 36px;
+    min-width: 36px;
   }
 `,iQ=Kt.div`
   display: flex;
@@ -936,7 +935,7 @@ Please change the parent <Route path="${O}"> to <Route path="${O==="/"?"*":`${O}
               @media (max-width: 768px) {
                 .add-book-text { display: none !important; }
               }
-            `})]}),ie.jsxs("div",{style:{display:"flex",gap:"0rem",alignItems:"center"},children:[ie.jsx(w1,{content:r.sidebar.decrease_font,children:ie.jsx(C1,{onClick:p,children:ie.jsx(nC,{size:16})})}),ie.jsx(w1,{content:r.sidebar.increase_font,children:ie.jsx(C1,{onClick:u,children:ie.jsx(rC,{size:16})})}),ie.jsx(w1,{content:r.sidebar.sync_data,children:ie.jsx(C1,{onClick:()=>{x(!0),e()},children:ie.jsx(jV,{size:18})})}),ie.jsx(w1,{content:ue?r.sidebar.install_update:r.sidebar.check_updates,children:ie.jsxs(C1,{onClick:Re,style:{position:"relative"},children:[ie.jsx(kV,{size:18,className:T?"spin":""}),ue&&ie.jsx("span",{style:{position:"absolute",top:"4px",right:"4px",width:"8px",height:"8px",borderRadius:"50%",backgroundColor:"#ef4444",border:"1px solid white"}})]})}),ie.jsx(w1,{content:s==="light"?r.sidebar.switch_dark:r.sidebar.switch_light,children:ie.jsx(C1,{onClick:h,children:s==="light"?ie.jsx(FV,{size:18}):ie.jsx(YV,{size:18})})}),ie.jsx(w1,{content:r.sidebar.settings,children:ie.jsx(C1,{onClick:()=>{const ge=i.pathname==="/"||i.pathname==="";b("/settings",{replace:!ge}),e()},children:ie.jsx(WV,{size:18})})})]})]}),ie.jsxs($Z,{children:[ie.jsx(eQ,{size:16}),ie.jsx(tQ,{placeholder:r.sidebar.search,value:t,onChange:ge=>n(ge.target.value)}),t&&ie.jsx(nQ,{onClick:()=>n(""),children:ie.jsx(hp,{size:14})})]}),ie.jsx("div",{style:{display:"flex",gap:"0.5rem"},children:ie.jsxs("select",{value:a,onChange:ge=>c(ge.target.value),style:{flex:1,padding:window.innerWidth<=768?"8px":"0.5rem",fontSize:window.innerWidth<=768?"14px":"inherit",borderRadius:"6px",border:`1px solid ${m.colors.border}`,background:m.colors.surface,color:m.colors.text},children:[ie.jsx("option",{value:"date-desc",children:r.sidebar.newest}),ie.jsx("option",{value:"date-asc",children:r.sidebar.oldest}),ie.jsx("option",{value:"last-memo-desc",children:r.sidebar.last_memoed}),ie.jsx("option",{value:"last-comment-desc",children:r.sidebar.last_commented}),ie.jsx("option",{value:"title-asc",children:"Title (A-Z)"})]})})]}),ie.jsx(aQ,{children:qe?.map(ge=>ie.jsx(jZ,{book:ge,memos:Me?.filter(Ae=>Ae.bookId===ge.id)||[],onClick:e},ge.id))}),ie.jsx(bq,{isOpen:E,onClose:()=>x(!1)}),W&&ie.jsx(XP,{message:W,onClose:()=>V(null)}),l&&ie.jsx(QP,{onClose:()=>o(!1)})]})},cQ=Kt.div`
+            `})]}),ie.jsxs("div",{style:{display:"flex",gap:"0rem",alignItems:"center",flexShrink:1,minWidth:0,overflow:"hidden"},children:[ie.jsx(w1,{content:r.sidebar.decrease_font,children:ie.jsx(C1,{onClick:p,children:ie.jsx(nC,{size:16})})}),ie.jsx(w1,{content:r.sidebar.increase_font,children:ie.jsx(C1,{onClick:u,children:ie.jsx(rC,{size:16})})}),ie.jsx(w1,{content:r.sidebar.sync_data,children:ie.jsx(C1,{onClick:()=>{x(!0),e()},children:ie.jsx(jV,{size:18})})}),ie.jsx(w1,{content:ue?r.sidebar.install_update:r.sidebar.check_updates,children:ie.jsxs(C1,{onClick:Re,style:{position:"relative"},children:[ie.jsx(kV,{size:18,className:T?"spin":""}),ue&&ie.jsx("span",{style:{position:"absolute",top:"4px",right:"4px",width:"8px",height:"8px",borderRadius:"50%",backgroundColor:"#ef4444",border:"1px solid white"}})]})}),ie.jsx(w1,{content:s==="light"?r.sidebar.switch_dark:r.sidebar.switch_light,children:ie.jsx(C1,{onClick:h,children:s==="light"?ie.jsx(FV,{size:18}):ie.jsx(YV,{size:18})})}),ie.jsx(w1,{content:r.sidebar.settings,children:ie.jsx(C1,{onClick:()=>{const ge=i.pathname==="/"||i.pathname==="";b("/settings",{replace:!ge}),e()},children:ie.jsx(WV,{size:18})})})]})]}),ie.jsxs($Z,{children:[ie.jsx(eQ,{size:16}),ie.jsx(tQ,{placeholder:r.sidebar.search,value:t,onChange:ge=>n(ge.target.value)}),t&&ie.jsx(nQ,{onClick:()=>n(""),children:ie.jsx(hp,{size:14})})]}),ie.jsx("div",{style:{display:"flex",gap:"0.5rem"},children:ie.jsxs("select",{value:a,onChange:ge=>c(ge.target.value),style:{flex:1,padding:window.innerWidth<=768?"8px":"0.5rem",fontSize:window.innerWidth<=768?"14px":"inherit",borderRadius:"6px",border:`1px solid ${m.colors.border}`,background:m.colors.surface,color:m.colors.text},children:[ie.jsx("option",{value:"date-desc",children:r.sidebar.newest}),ie.jsx("option",{value:"date-asc",children:r.sidebar.oldest}),ie.jsx("option",{value:"last-memo-desc",children:r.sidebar.last_memoed}),ie.jsx("option",{value:"last-comment-desc",children:r.sidebar.last_commented}),ie.jsx("option",{value:"title-asc",children:"Title (A-Z)"})]})})]}),ie.jsx(aQ,{children:qe?.map(ge=>ie.jsx(jZ,{book:ge,memos:Me?.filter(Ae=>Ae.bookId===ge.id)||[],onClick:e},ge.id))}),ie.jsx(bq,{isOpen:E,onClose:()=>x(!1)}),W&&ie.jsx(XP,{message:W,onClose:()=>V(null)}),l&&ie.jsx(QP,{onClose:()=>o(!1)})]})},cQ=Kt.div`
   display: flex;
   height: 100vh;
   width: 100vw;
