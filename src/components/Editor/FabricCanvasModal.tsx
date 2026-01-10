@@ -290,7 +290,7 @@ const CustomRangeInput = styled.input<{ $size: number }>`
 `;
 
 const CustomNumberInput = styled.input`
-  width: 50px;
+  width: 65px;
   padding: 0.2rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
