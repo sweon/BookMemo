@@ -82,6 +82,14 @@ const BackgroundIcon = () => (
     </svg>
 );
 
+const VerticalExpandIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 4v16" />
+        <path d="M8 8l4-4 4 4" />
+        <path d="M8 16l4 4 4-4" />
+    </svg>
+);
+
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -1049,7 +1057,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                 )}
                                 {item.actionId === 'extend_height' && (
                                     <ToolButton onClick={handleExtendHeight} title="Extend height">
-                                        <FiArrowDown size={18} />
+                                        <VerticalExpandIcon />
                                     </ToolButton>
                                 )}
                                 {item.actionId === 'background' && (
