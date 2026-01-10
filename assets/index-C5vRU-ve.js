@@ -2270,22 +2270,22 @@ gl_FragColor.rgb *= color.a;
   justify-content: center;
 `,kS=Vt.div`
   background: white;
-  padding: 0.5rem 0.6rem;
+  padding: 0.4rem;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  min-width: 85px;
+  gap: 0.35rem;
+  min-width: 65px;
 `,DS=Vt.div`
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
   margin-top: 0.25rem;
 `,xd=Vt.button`
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.35rem;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid #dee2e6;
@@ -2356,7 +2356,7 @@ gl_FragColor.rgb *= color.a;
     outline: none;
   }
 `,tSe=Vt.input`
-  width: 65px;
+  width: 45px;
   padding: 0.2rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
