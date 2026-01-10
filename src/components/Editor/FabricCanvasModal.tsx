@@ -217,10 +217,10 @@ const Backdrop = styled.div<{ $centered?: boolean }>`
   z-index: 10000;
   display: flex;
   align-items: ${({ $centered = true }) => $centered ? 'center' : 'flex-start'};
-  justify-content: ${({ $centered = true }) => $centered ? 'center' : 'flex-start'};
+  justify-content: center;
 `;
 
-const CompactModal = styled.div<{ $anchor?: { top: number, left: number } }>`
+const CompactModal = styled.div<{ $anchor?: { top: number } }>`
   background: white;
   padding: 0.4rem;
   border-radius: 8px;
@@ -233,7 +233,8 @@ const CompactModal = styled.div<{ $anchor?: { top: number, left: number } }>`
   ${({ $anchor }) => $anchor && `
     position: fixed;
     top: ${$anchor.top}px;
-    left: ${$anchor.left}px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 10001;
   `}
 `;
@@ -331,7 +332,7 @@ const CustomRangeInput = styled.input<{ $size: number; $opacityValue?: number }>
 `;
 
 const CustomNumberInput = styled.input`
-  width: 45px;
+  width: 60px;
   padding: 0.2rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
@@ -538,7 +539,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     const lastTapMapRef = useRef<{ [key: string]: number }>({});
     const openedTimeRef = useRef<number>(0);
-    const [settingsAnchor, setSettingsAnchor] = useState<{ top: number, left: number } | null>(null);
+    const [settingsAnchor, setSettingsAnchor] = useState<{ top: number } | null>(null);
 
     const handleDoubleTap = (e: React.TouchEvent, id: string, callback: (e: React.TouchEvent | React.MouseEvent) => void) => {
         const now = Date.now();
@@ -639,12 +640,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     const handleColorDoubleClick = (e: React.MouseEvent | React.TouchEvent, index: number) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const modalWidth = 110;
-        let leftVal = rect.left + (rect.width / 2) - (modalWidth / 2);
-        leftVal = Math.max(10, Math.min(leftVal, window.innerWidth - modalWidth - 10));
         setSettingsAnchor({
-            top: rect.bottom + 5,
-            left: leftVal
+            top: rect.bottom + 5
         });
         setEditingColorIndex(index);
         setTempColor(availableColors[index]);
@@ -678,12 +675,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     const handleBrushSizeDoubleClick = (e: React.MouseEvent | React.TouchEvent, index: number) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const modalWidth = 110;
-        let leftVal = rect.left + (rect.width / 2) - (modalWidth / 2);
-        leftVal = Math.max(10, Math.min(leftVal, window.innerWidth - modalWidth - 10));
         setSettingsAnchor({
-            top: rect.bottom + 5,
-            left: leftVal
+            top: rect.bottom + 5
         });
         setEditingSizeIndex(index);
         setTempSize(availableBrushSizes[index]);
@@ -717,12 +710,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     const handleShapeToolDoubleClick = (e: React.MouseEvent | React.TouchEvent, toolId: string) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const modalWidth = 160;
-        let left = rect.left + (rect.width / 2) - (modalWidth / 2);
-        left = Math.max(10, Math.min(left, window.innerWidth - modalWidth - 10));
         setSettingsAnchor({
-            top: rect.bottom + 5,
-            left: left
+            top: rect.bottom + 5
         });
         const style = shapeStyles[toolId] || DEFAULT_SHAPE_STYLE;
         const currentIndex = DASH_OPTIONS.findIndex(d => JSON.stringify(d) === JSON.stringify(style.dashArray));
