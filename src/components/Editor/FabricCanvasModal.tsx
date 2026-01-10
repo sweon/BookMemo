@@ -207,7 +207,7 @@ const DashOption = styled.button<{ $active: boolean }>`
   }
 `;
 
-const Backdrop = styled.div`
+const Backdrop = styled.div<{ $centered?: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
@@ -216,11 +216,11 @@ const Backdrop = styled.div`
   background: rgba(0, 0, 0, 0.4);
   z-index: 10000;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: ${({ $centered = true }) => $centered ? 'center' : 'flex-start'};
+  justify-content: ${({ $centered = true }) => $centered ? 'center' : 'flex-start'};
 `;
 
-const CompactModal = styled.div`
+const CompactModal = styled.div<{ $anchor?: { top: number, left: number } }>`
   background: white;
   padding: 0.4rem;
   border-radius: 8px;
@@ -229,6 +229,13 @@ const CompactModal = styled.div`
   flex-direction: column;
   gap: 0.35rem;
   min-width: 65px;
+
+  ${({ $anchor }) => $anchor && `
+    position: fixed;
+    top: ${$anchor.top}px;
+    left: ${$anchor.left}px;
+    z-index: 10001;
+  `}
 `;
 
 const CompactModalFooter = styled.div`
@@ -531,15 +538,16 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     const lastTapMapRef = useRef<{ [key: string]: number }>({});
     const openedTimeRef = useRef<number>(0);
+    const [settingsAnchor, setSettingsAnchor] = useState<{ top: number, left: number } | null>(null);
 
-    const handleDoubleTap = (e: React.TouchEvent, id: string, callback: () => void) => {
+    const handleDoubleTap = (e: React.TouchEvent, id: string, callback: (e: React.TouchEvent | React.MouseEvent) => void) => {
         const now = Date.now();
         const lastTap = lastTapMapRef.current[id] || 0;
         const diff = now - lastTap;
         if (diff > 0 && diff < 400) {
             if (e.cancelable) e.preventDefault();
             openedTimeRef.current = now; // Record open time for ghost click prevention
-            callback();
+            callback(e);
             lastTapMapRef.current[id] = 0;
         } else {
             lastTapMapRef.current[id] = now;
@@ -629,7 +637,12 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     }, []);
 
 
-    const handleColorDoubleClick = (index: number) => {
+    const handleColorDoubleClick = (e: React.MouseEvent | React.TouchEvent, index: number) => {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setSettingsAnchor({
+            top: rect.bottom + 5,
+            left: Math.max(10, Math.min(rect.left, window.innerWidth - 130))
+        });
         setEditingColorIndex(index);
         setTempColor(availableColors[index]);
         openedTimeRef.current = Date.now();
@@ -637,6 +650,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     };
 
     const handleColorOk = () => {
+        setSettingsAnchor(null);
         if (editingColorIndex !== null) {
             const newColors = [...availableColors];
             newColors[editingColorIndex] = tempColor;
@@ -654,11 +668,17 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     };
 
     const handleColorCancel = () => {
+        setSettingsAnchor(null);
         setIsColorEditOpen(false);
         setEditingColorIndex(null);
     };
 
-    const handleBrushSizeDoubleClick = (index: number) => {
+    const handleBrushSizeDoubleClick = (e: React.MouseEvent | React.TouchEvent, index: number) => {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setSettingsAnchor({
+            top: rect.bottom + 5,
+            left: Math.max(10, Math.min(rect.left, window.innerWidth - 130))
+        });
         setEditingSizeIndex(index);
         setTempSize(availableBrushSizes[index]);
         openedTimeRef.current = Date.now();
@@ -666,6 +686,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     };
 
     const handleSizeOk = () => {
+        setSettingsAnchor(null);
         if (editingSizeIndex !== null) {
             const newSizes = [...availableBrushSizes];
             newSizes[editingSizeIndex] = tempSize;
@@ -683,11 +704,17 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     };
 
     const handleSizeCancel = () => {
+        setSettingsAnchor(null);
         setIsSizeEditOpen(false);
         setEditingSizeIndex(null);
     };
 
-    const handleShapeToolDoubleClick = (toolId: string) => {
+    const handleShapeToolDoubleClick = (e: React.MouseEvent | React.TouchEvent, toolId: string) => {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setSettingsAnchor({
+            top: rect.bottom + 5,
+            left: Math.max(10, Math.min(rect.left, window.innerWidth - 180)) // Shape modal is wider
+        });
         const style = shapeStyles[toolId] || DEFAULT_SHAPE_STYLE;
         const currentIndex = DASH_OPTIONS.findIndex(d => JSON.stringify(d) === JSON.stringify(style.dashArray));
         setTempDashIndex(currentIndex === -1 ? 0 : currentIndex);
@@ -696,6 +723,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     };
 
     const handleShapeSettingsOk = () => {
+        setSettingsAnchor(null);
         if (activeTool) {
             setShapeStyles(prev => ({
                 ...prev,
@@ -714,6 +742,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     };
 
     const handleShapeSettingsCancel = () => {
+        setSettingsAnchor(null);
         setIsShapeSettingsOpen(false);
     };
 
@@ -745,14 +774,14 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                             <ToolButton
                                 $active={activeTool === item.toolId}
                                 onClick={() => setActiveTool(item.toolId!)}
-                                onDoubleClick={() => {
+                                onDoubleClick={(e) => {
                                     if (['line', 'rect', 'circle', 'ellipse', 'triangle', 'diamond'].includes(item.toolId!)) {
-                                        handleShapeToolDoubleClick(item.toolId!);
+                                        handleShapeToolDoubleClick(e, item.toolId!);
                                     }
                                 }}
                                 onTouchStart={(e) => {
                                     if (['line', 'rect', 'circle', 'ellipse', 'triangle', 'diamond'].includes(item.toolId!)) {
-                                        handleDoubleTap(e, `tool-${item.toolId}`, () => handleShapeToolDoubleClick(item.toolId!));
+                                        handleDoubleTap(e, `tool-${item.toolId}`, (ev) => handleShapeToolDoubleClick(ev, item.toolId!));
                                     }
                                 }}
                                 title={(item.toolId ?? '').charAt(0).toUpperCase() + (item.toolId ?? '').slice(1)}
@@ -1003,8 +1032,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                             setActiveTool('pen');
                                         }
                                     }}
-                                    onDoubleClick={() => handleColorDoubleClick(item.colorIndex!)}
-                                    onTouchStart={(e) => handleDoubleTap(e, `color-${item.colorIndex}`, () => handleColorDoubleClick(item.colorIndex!))}
+                                    onDoubleClick={(e) => handleColorDoubleClick(e, item.colorIndex!)}
+                                    onTouchStart={(e) => handleDoubleTap(e, `color-${item.colorIndex}`, (ev) => handleColorDoubleClick(ev, item.colorIndex!))}
                                     title="Double-click to change color"
                                 />
                             </div>
@@ -1014,8 +1043,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                             <ToolButton
                                 $active={brushSize === availableBrushSizes[item.sizeIndex!]}
                                 onClick={() => setBrushSize(availableBrushSizes[item.sizeIndex!])}
-                                onDoubleClick={() => handleBrushSizeDoubleClick(item.sizeIndex!)}
-                                onTouchStart={(e) => handleDoubleTap(e, `size-${item.sizeIndex}`, () => handleBrushSizeDoubleClick(item.sizeIndex!))}
+                                onDoubleClick={(e) => handleBrushSizeDoubleClick(e, item.sizeIndex!)}
+                                onTouchStart={(e) => handleDoubleTap(e, `size-${item.sizeIndex}`, (ev) => handleBrushSizeDoubleClick(ev, item.sizeIndex!))}
                                 style={{ width: 30, fontSize: '0.8rem', padding: 0 }}
                                 title={`Size: ${availableBrushSizes[item.sizeIndex!]}px (Double-click to change)`}
                             >
@@ -1491,12 +1520,17 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                     </DragDropContext>
                 </Toolbar>
                 {isColorEditOpen && (
-                    <Backdrop onClick={(e) => {
-                        const now = Date.now();
-                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
-                        if (e.target === e.currentTarget) handleColorCancel();
-                    }}>
-                        <CompactModal onClick={e => e.stopPropagation()}>
+                    <Backdrop
+                        $centered={!settingsAnchor}
+                        onClick={(e) => {
+                            const now = Date.now();
+                            if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                            if (e.target === e.currentTarget) handleColorCancel();
+                        }}>
+                        <CompactModal
+                            $anchor={settingsAnchor || undefined}
+                            onClick={e => e.stopPropagation()}
+                        >
                             <ColorInputWrapper>
                                 <CustomColorInput
                                     type="color"
@@ -1523,12 +1557,17 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                 )}
 
                 {isSizeEditOpen && (
-                    <Backdrop onClick={(e) => {
-                        const now = Date.now();
-                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
-                        if (e.target === e.currentTarget) handleSizeCancel();
-                    }}>
-                        <CompactModal onClick={e => e.stopPropagation()}>
+                    <Backdrop
+                        $centered={!settingsAnchor}
+                        onClick={(e) => {
+                            const now = Date.now();
+                            if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                            if (e.target === e.currentTarget) handleSizeCancel();
+                        }}>
+                        <CompactModal
+                            $anchor={settingsAnchor || undefined}
+                            onClick={e => e.stopPropagation()}
+                        >
                             <ColorInputWrapper>
                                 <CustomRangeInput
                                     type="range"
@@ -1563,12 +1602,18 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                     </Backdrop>
                 )}
                 {isShapeSettingsOpen && (
-                    <Backdrop onClick={(e) => {
-                        const now = Date.now();
-                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
-                        if (e.target === e.currentTarget) handleShapeSettingsCancel();
-                    }}>
-                        <CompactModal onClick={e => e.stopPropagation()} style={{ minWidth: '160px' }}>
+                    <Backdrop
+                        $centered={!settingsAnchor}
+                        onClick={(e) => {
+                            const now = Date.now();
+                            if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                            if (e.target === e.currentTarget) handleShapeSettingsCancel();
+                        }}>
+                        <CompactModal
+                            $anchor={settingsAnchor || undefined}
+                            onClick={e => e.stopPropagation()}
+                            style={{ minWidth: '160px' }}
+                        >
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 {DASH_OPTIONS.map((dash, index) => (
                                     <DashOption
