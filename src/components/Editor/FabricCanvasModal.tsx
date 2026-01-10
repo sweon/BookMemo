@@ -308,9 +308,9 @@ const CompactModalFooter = styled.div`
 `;
 
 const CompactModalButton = styled.button<{ $variant?: 'primary' | 'secondary' | 'danger' }>`
-  padding: 0.2rem 0.35rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid #dee2e6;
@@ -592,6 +592,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (localStorage.getItem('fabric_brush_type') as any) || 'pencil';
     });
+    const [tempBrushType, setTempBrushType] = useState(brushType);
     const [isPenEditOpen, setIsPenEditOpen] = useState(false);
 
     useEffect(() => {
@@ -821,7 +822,19 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         setSettingsAnchor({
             top: rect.bottom + 5
         });
+        setTempBrushType(brushType);
+        openedTimeRef.current = Date.now();
         setIsPenEditOpen(true);
+    };
+
+    const handlePenOk = () => {
+        setBrushType(tempBrushType);
+        setSettingsAnchor(null);
+        setIsPenEditOpen(false);
+    };
+
+    const handlePenReset = () => {
+        setTempBrushType('pencil');
     };
 
     const handlePenCancel = () => {
@@ -1832,8 +1845,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                         >
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                                 <DashOption
-                                    $active={brushType === 'pencil'}
-                                    onClick={() => { setBrushType('pencil'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'pencil'}
+                                    onClick={() => setTempBrushType('pencil')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <FiEdit2 size={16} />
@@ -1841,8 +1854,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_pencil || 'Pencil'}</span>
                                 </DashOption>
                                 <DashOption
-                                    $active={brushType === 'pen'}
-                                    onClick={() => { setBrushType('pen'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'pen'}
+                                    onClick={() => setTempBrushType('pen')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <FiMinus size={16} />
@@ -1850,8 +1863,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_pen || 'Pen'}</span>
                                 </DashOption>
                                 <DashOption
-                                    $active={brushType === 'marker'}
-                                    onClick={() => { setBrushType('marker'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'marker'}
+                                    onClick={() => setTempBrushType('marker')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <MarkerIcon />
@@ -1859,8 +1872,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_marker || 'Marker'}</span>
                                 </DashOption>
                                 <DashOption
-                                    $active={brushType === 'highlighter'}
-                                    onClick={() => { setBrushType('highlighter'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'highlighter'}
+                                    onClick={() => setTempBrushType('highlighter')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <HighlighterIcon />
@@ -1868,8 +1881,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_highlighter || 'Highlight'}</span>
                                 </DashOption>
                                 <DashOption
-                                    $active={brushType === 'glow'}
-                                    onClick={() => { setBrushType('glow'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'glow'}
+                                    onClick={() => setTempBrushType('glow')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <GlowIcon />
@@ -1877,8 +1890,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_glow || 'Glow'}</span>
                                 </DashOption>
                                 <DashOption
-                                    $active={brushType === 'neon'}
-                                    onClick={() => { setBrushType('neon'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'neon'}
+                                    onClick={() => setTempBrushType('neon')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <NeonIcon />
@@ -1886,8 +1899,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_neon || 'Neon'}</span>
                                 </DashOption>
                                 <DashOption
-                                    $active={brushType === 'spray'}
-                                    onClick={() => { setBrushType('spray'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'spray'}
+                                    onClick={() => setTempBrushType('spray')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <SprayBrushIcon />
@@ -1895,8 +1908,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_spray || 'Spray'}</span>
                                 </DashOption>
                                 <DashOption
-                                    $active={brushType === 'circle'}
-                                    onClick={() => { setBrushType('circle'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'circle'}
+                                    onClick={() => setTempBrushType('circle')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <CircleBrushIcon />
@@ -1904,8 +1917,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_circle || 'Bubble'}</span>
                                 </DashOption>
                                 <DashOption
-                                    $active={brushType === 'calligraphy'}
-                                    onClick={() => { setBrushType('calligraphy'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'calligraphy'}
+                                    onClick={() => setTempBrushType('calligraphy')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <CalligraphyIcon />
@@ -1913,8 +1926,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_calligraphy || 'Slanted'}</span>
                                 </DashOption>
                                 <DashOption
-                                    $active={brushType === 'crayon'}
-                                    onClick={() => { setBrushType('crayon'); setIsPenEditOpen(false); }}
+                                    $active={tempBrushType === 'crayon'}
+                                    onClick={() => setTempBrushType('crayon')}
                                     style={{ height: '32px', justifyContent: 'flex-start', padding: '0 8px', gap: '8px' }}
                                 >
                                     <CrayonIcon />
@@ -1922,6 +1935,19 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <span style={{ fontSize: '0.75rem' }}>{(t.drawing as any)?.pen_crayon || 'Crayon'}</span>
                                 </DashOption>
                             </div>
+                            <CompactModalFooter>
+                                <CompactModalButton onClick={handlePenReset}>
+                                    {t.drawing?.reset || 'Reset'}
+                                </CompactModalButton>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <CompactModalButton onClick={handlePenCancel}>
+                                        {t.drawing?.cancel || 'Cancel'}
+                                    </CompactModalButton>
+                                    <CompactModalButton onClick={handlePenOk} $variant="primary">
+                                        {t.drawing?.ok || 'OK'}
+                                    </CompactModalButton>
+                                </div>
+                            </CompactModalFooter>
                         </CompactModal>
                     </Backdrop>
                 )}
