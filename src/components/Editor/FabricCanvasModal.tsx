@@ -1392,1172 +1392,1169 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                     </ToolButton>
                 )}
             </div>
-        )
-    }
-            </Draggable >
         );
     };
 
-// Shape Drawing Handlers
-const handleShapeMouseDown = React.useCallback((opt: fabric.IEvent) => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
+    // Shape Drawing Handlers
+    const handleShapeMouseDown = React.useCallback((opt: fabric.IEvent) => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
 
-    const pointer = canvas.getPointer(opt.e);
-    isDrawingRef.current = true;
-    startPointRef.current = { x: pointer.x, y: pointer.y };
+        const pointer = canvas.getPointer(opt.e);
+        isDrawingRef.current = true;
+        startPointRef.current = { x: pointer.x, y: pointer.y };
 
-    let shape: fabric.Object | null = null;
-    const currentStyle = shapeStyles[activeTool] || DEFAULT_SHAPE_STYLE;
-    const commonProps = {
-        stroke: color,
-        strokeWidth: brushSize,
-        strokeDashArray: currentStyle.dashArray,
-        opacity: currentStyle.opacity / 100,
-        fill: 'transparent',
-        left: pointer.x,
-        top: pointer.y,
-        selectable: false, // Initially false while drawing
-        evented: false,
-    };
+        let shape: fabric.Object | null = null;
+        const currentStyle = shapeStyles[activeTool] || DEFAULT_SHAPE_STYLE;
+        const commonProps = {
+            stroke: color,
+            strokeWidth: brushSize,
+            strokeDashArray: currentStyle.dashArray,
+            opacity: currentStyle.opacity / 100,
+            fill: 'transparent',
+            left: pointer.x,
+            top: pointer.y,
+            selectable: false, // Initially false while drawing
+            evented: false,
+        };
 
-    if (activeTool === 'line' || activeTool === 'arrow') {
-        shape = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-            ...commonProps,
-            strokeLineCap: 'round'
-        });
-        if (activeTool === 'arrow') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (shape as any).hasArrow = true;
-
-            // Add preview head
-            const head = new fabric.Polyline([
-                new fabric.Point(pointer.x, pointer.y),
-                new fabric.Point(pointer.x, pointer.y),
-                new fabric.Point(pointer.x, pointer.y)
-            ], {
-                stroke: color,
-                strokeWidth: brushSize,
-                fill: 'transparent',
-                strokeLineCap: 'round',
-                strokeLineJoin: 'round',
-                selectable: false,
-                evented: false,
-                opacity: (currentStyle.opacity || 100) / 100
+        if (activeTool === 'line' || activeTool === 'arrow') {
+            shape = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+                ...commonProps,
+                strokeLineCap: 'round'
             });
-            arrowHeadPreviewRef.current = head;
-            canvas.add(head);
-        }
-    } else if (activeTool === 'rect') {
-        shape = new fabric.Rect({
-            ...commonProps,
-            width: 0,
-            height: 0,
-        });
-    } else if (activeTool === 'circle') {
-        shape = new fabric.Circle({
-            ...commonProps,
-            radius: 0,
-        });
-    } else if (activeTool === 'triangle') {
-        shape = new fabric.Triangle({
-            ...commonProps,
-            width: 0,
-            height: 0,
-        });
-    } else if (activeTool === 'ellipse') {
-        shape = new fabric.Ellipse({
-            ...commonProps,
-            rx: 0,
-            ry: 0,
-        });
-    } else if (activeTool === 'diamond') {
-        shape = new fabric.Polygon([
-            new fabric.Point(0, 0),
-            new fabric.Point(0, 0),
-            new fabric.Point(0, 0),
-            new fabric.Point(0, 0)
-        ], {
-            ...commonProps,
-            originX: 'center',
-            originY: 'center',
-            isDiamond: true,
-        } as any);
-    }
+            if (activeTool === 'arrow') {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (shape as any).hasArrow = true;
 
-    if (shape) {
-        activeShapeRef.current = shape;
-        canvas.add(shape);
-    }
-}, [activeTool, color, brushSize, shapeStyles]);
-
-const handleShapeMouseMove = React.useCallback((opt: fabric.IEvent) => {
-    if (!isDrawingRef.current || !activeShapeRef.current || !startPointRef.current) return;
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    const pointer = canvas.getPointer(opt.e);
-    const start = startPointRef.current;
-    const shape = activeShapeRef.current;
-
-    const left = Math.min(start.x, pointer.x);
-    const top = Math.min(start.y, pointer.y);
-    const width = Math.abs(pointer.x - start.x);
-    const height = Math.abs(pointer.y - start.y);
-
-    if (activeTool === 'line' || activeTool === 'arrow') {
-        (shape as fabric.Line).set({ x2: pointer.x, y2: pointer.y });
-
-        if (activeTool === 'arrow') {
-            // Re-calculate arrow head points
-            const x2 = Math.round(pointer.x);
-            const y2 = Math.round(pointer.y);
-            const headAngle = Math.PI / 6;
-
-            // Calculate angle from start to current pointer
-            const start = startPointRef.current!;
-            const angle = Math.atan2(y2 - Math.round(start.y), x2 - Math.round(start.x));
-            const currentStyle = shapeStyles['arrow'] || DEFAULT_SHAPE_STYLE;
-            const headLength = Math.round(currentStyle.headSize || Math.max(12, brushSize * 3));
-
-            // Arrow head points (pure mathematical symmetry, rounded for stability)
-            const x3 = Math.round(x2 - headLength * Math.cos(angle - headAngle));
-            const y3 = Math.round(y2 - headLength * Math.sin(angle - headAngle));
-            const x4 = Math.round(x2 - headLength * Math.cos(angle + headAngle));
-            const y4 = Math.round(y2 - headLength * Math.sin(angle + headAngle));
-
-            if (arrowHeadPreviewRef.current) {
-                arrowHeadPreviewRef.current.set({
-                    points: [
-                        new fabric.Point(x3, y3),
-                        new fabric.Point(x2, y2),
-                        new fabric.Point(x4, y4)
-                    ]
-                });
-                arrowHeadPreviewRef.current.setCoords();
-                canvas.requestRenderAll();
-            }
-
-            (shape as any).arrowHead = [new fabric.Point(x3, y3), new fabric.Point(x2, y2), new fabric.Point(x4, y4)];
-
-            // Update the line part
-            (shape as fabric.Line).set({ x2: x2, y2: y2 });
-        }
-    } else if (activeTool === 'rect') {
-        shape.set({ left, top, width, height });
-    } else if (activeTool === 'circle') {
-        const radius = Math.max(width, height) / 2;
-        const circleLeft = start.x + (pointer.x < start.x ? -radius * 2 : 0);
-        const circleTop = start.y + (pointer.y < start.y ? -radius * 2 : 0);
-        (shape as fabric.Circle).set({
-            radius,
-            left: circleLeft,
-            top: circleTop
-        });
-    } else if (activeTool === 'triangle') {
-        shape.set({ left, top, width, height });
-    } else if (activeTool === 'ellipse') {
-        (shape as fabric.Ellipse).set({
-            rx: width / 2,
-            ry: height / 2,
-            left,
-            top
-        });
-    } else if (activeTool === 'diamond') {
-        const hw = width / 2;
-        const hh = height / 2;
-        const points = [
-            new fabric.Point(0, -hh), // Top
-            new fabric.Point(hw, 0),   // Right
-            new fabric.Point(0, hh),  // Bottom
-            new fabric.Point(-hw, 0)   // Left
-        ];
-
-        (shape as fabric.Polygon).set({
-            points,
-            left: left + hw,
-            top: top + hh,
-            width,
-            height,
-            pathOffset: new fabric.Point(0, 0)
-        });
-    }
-
-    shape.setCoords();
-    canvas.requestRenderAll();
-}, [activeTool]);
-
-const handleShapeMouseUp = React.useCallback(() => {
-    isDrawingRef.current = false;
-    if (activeShapeRef.current) {
-        const shape = activeShapeRef.current;
-
-        // If it's an arrow, we might want to convert it to a Path or Group for permanent storage
-        if (activeTool === 'arrow' && (shape as fabric.Line).x1 !== undefined) {
-            const line = shape as fabric.Line;
-            const x1 = Math.round(line.x1!);
-            const y1 = Math.round(line.y1!);
-            const x2 = Math.round(line.x2!);
-            const y2 = Math.round(line.y2!);
-
-            const angle = Math.atan2(y2 - y1, x2 - x1);
-            const currentStyle = shapeStyles[activeTool] || DEFAULT_SHAPE_STYLE;
-            const headLength = Math.round(currentStyle.headSize || Math.max(12, brushSize * 3));
-            const headAngle = Math.PI / 6;
-
-            const x3 = Math.round(x2 - headLength * Math.cos(angle - headAngle));
-            const y3 = Math.round(y2 - headLength * Math.sin(angle - headAngle));
-            const x4 = Math.round(x2 - headLength * Math.cos(angle + headAngle));
-            const y4 = Math.round(y2 - headLength * Math.sin(angle + headAngle));
-            const canvas = fabricCanvasRef.current;
-
-            if (canvas) {
-                canvas.remove(shape);
-
-                // Calculate minimal point to use as group origin for precision
-                const minX = Math.min(x1, x2, x3, x4);
-                const minY = Math.min(y1, y2, y3, y4);
-
-                // Line part (can be dashed)
-                const linePart = new fabric.Line([x1 - minX, y1 - minY, x2 - minX, y2 - minY], {
-                    stroke: color,
-                    strokeWidth: brushSize,
-                    strokeDashArray: currentStyle.dashArray,
-                    strokeLineCap: 'round',
-                    originX: 'left',
-                    originY: 'top',
-                    left: x1 < x2 ? 0 : x1 - x2 // This is handled by Line, but let's be careful
-                });
-                // Re-set absolute positioning for Line based on the parent group's left/top
-                linePart.set({ left: Math.min(x1, x2) - minX, top: Math.min(y1, y2) - minY });
-
-                // Head part (always solid)
-                const headPart = new fabric.Polyline([
-                    new fabric.Point(x3 - minX, y3 - minY),
-                    new fabric.Point(x2 - minX, y2 - minY),
-                    new fabric.Point(x4 - minX, y4 - minY)
+                // Add preview head
+                const head = new fabric.Polyline([
+                    new fabric.Point(pointer.x, pointer.y),
+                    new fabric.Point(pointer.x, pointer.y),
+                    new fabric.Point(pointer.x, pointer.y)
                 ], {
                     stroke: color,
                     strokeWidth: brushSize,
-                    strokeDashArray: undefined,
                     fill: 'transparent',
                     strokeLineCap: 'round',
                     strokeLineJoin: 'round',
-                    originX: 'left',
-                    originY: 'top',
-                    left: Math.min(x2, x3, x4) - minX,
-                    top: Math.min(y2, y3, y4) - minY
-                });
-
-                const arrowGroup = new fabric.Group([linePart, headPart], {
                     selectable: false,
-                    evented: true,
-                    isArrow: true,
-                    opacity: (currentStyle.opacity || 100) / 100,
-                    left: minX,
-                    top: minY,
-                    originX: 'left',
-                    originY: 'top'
-                } as any);
-
-                canvas.add(arrowGroup);
+                    evented: false,
+                    opacity: (currentStyle.opacity || 100) / 100
+                });
+                arrowHeadPreviewRef.current = head;
+                canvas.add(head);
             }
+        } else if (activeTool === 'rect') {
+            shape = new fabric.Rect({
+                ...commonProps,
+                width: 0,
+                height: 0,
+            });
+        } else if (activeTool === 'circle') {
+            shape = new fabric.Circle({
+                ...commonProps,
+                radius: 0,
+            });
+        } else if (activeTool === 'triangle') {
+            shape = new fabric.Triangle({
+                ...commonProps,
+                width: 0,
+                height: 0,
+            });
+        } else if (activeTool === 'ellipse') {
+            shape = new fabric.Ellipse({
+                ...commonProps,
+                rx: 0,
+                ry: 0,
+            });
+        } else if (activeTool === 'diamond') {
+            shape = new fabric.Polygon([
+                new fabric.Point(0, 0),
+                new fabric.Point(0, 0),
+                new fabric.Point(0, 0),
+                new fabric.Point(0, 0)
+            ], {
+                ...commonProps,
+                originX: 'center',
+                originY: 'center',
+                isDiamond: true,
+            } as any);
         }
 
-        if (arrowHeadPreviewRef.current) {
-            const canvas = fabricCanvasRef.current;
-            if (canvas) canvas.remove(arrowHeadPreviewRef.current);
-            arrowHeadPreviewRef.current = null;
+        if (shape) {
+            activeShapeRef.current = shape;
+            canvas.add(shape);
+        }
+    }, [activeTool, color, brushSize, shapeStyles]);
+
+    const handleShapeMouseMove = React.useCallback((opt: fabric.IEvent) => {
+        if (!isDrawingRef.current || !activeShapeRef.current || !startPointRef.current) return;
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        const pointer = canvas.getPointer(opt.e);
+        const start = startPointRef.current;
+        const shape = activeShapeRef.current;
+
+        const left = Math.min(start.x, pointer.x);
+        const top = Math.min(start.y, pointer.y);
+        const width = Math.abs(pointer.x - start.x);
+        const height = Math.abs(pointer.y - start.y);
+
+        if (activeTool === 'line' || activeTool === 'arrow') {
+            (shape as fabric.Line).set({ x2: pointer.x, y2: pointer.y });
+
+            if (activeTool === 'arrow') {
+                // Re-calculate arrow head points
+                const x2 = Math.round(pointer.x);
+                const y2 = Math.round(pointer.y);
+                const headAngle = Math.PI / 6;
+
+                // Calculate angle from start to current pointer
+                const start = startPointRef.current!;
+                const angle = Math.atan2(y2 - Math.round(start.y), x2 - Math.round(start.x));
+                const currentStyle = shapeStyles['arrow'] || DEFAULT_SHAPE_STYLE;
+                const headLength = Math.round(currentStyle.headSize || Math.max(12, brushSize * 3));
+
+                // Arrow head points (pure mathematical symmetry, rounded for stability)
+                const x3 = Math.round(x2 - headLength * Math.cos(angle - headAngle));
+                const y3 = Math.round(y2 - headLength * Math.sin(angle - headAngle));
+                const x4 = Math.round(x2 - headLength * Math.cos(angle + headAngle));
+                const y4 = Math.round(y2 - headLength * Math.sin(angle + headAngle));
+
+                if (arrowHeadPreviewRef.current) {
+                    arrowHeadPreviewRef.current.set({
+                        points: [
+                            new fabric.Point(x3, y3),
+                            new fabric.Point(x2, y2),
+                            new fabric.Point(x4, y4)
+                        ]
+                    });
+                    arrowHeadPreviewRef.current.setCoords();
+                    canvas.requestRenderAll();
+                }
+
+                (shape as any).arrowHead = [new fabric.Point(x3, y3), new fabric.Point(x2, y2), new fabric.Point(x4, y4)];
+
+                // Update the line part
+                (shape as fabric.Line).set({ x2: x2, y2: y2 });
+            }
+        } else if (activeTool === 'rect') {
+            shape.set({ left, top, width, height });
+        } else if (activeTool === 'circle') {
+            const radius = Math.max(width, height) / 2;
+            const circleLeft = start.x + (pointer.x < start.x ? -radius * 2 : 0);
+            const circleTop = start.y + (pointer.y < start.y ? -radius * 2 : 0);
+            (shape as fabric.Circle).set({
+                radius,
+                left: circleLeft,
+                top: circleTop
+            });
+        } else if (activeTool === 'triangle') {
+            shape.set({ left, top, width, height });
+        } else if (activeTool === 'ellipse') {
+            (shape as fabric.Ellipse).set({
+                rx: width / 2,
+                ry: height / 2,
+                left,
+                top
+            });
+        } else if (activeTool === 'diamond') {
+            const hw = width / 2;
+            const hh = height / 2;
+            const points = [
+                new fabric.Point(0, -hh), // Top
+                new fabric.Point(hw, 0),   // Right
+                new fabric.Point(0, hh),  // Bottom
+                new fabric.Point(-hw, 0)   // Left
+            ];
+
+            (shape as fabric.Polygon).set({
+                points,
+                left: left + hw,
+                top: top + hh,
+                width,
+                height,
+                pathOffset: new fabric.Point(0, 0)
+            });
         }
 
-        activeShapeRef.current.setCoords();
-        activeShapeRef.current = null;
-    }
-}, [activeTool, color, brushSize, shapeStyles]);
+        shape.setCoords();
+        canvas.requestRenderAll();
+    }, [activeTool]);
 
-const handleClear = () => {
-    if (!fabricCanvasRef.current) return;
-    fabricCanvasRef.current.clear();
-    fabricCanvasRef.current.setBackgroundColor('#ffffff', () => {
-        fabricCanvasRef.current?.renderAll();
-    });
-};
+    const handleShapeMouseUp = React.useCallback(() => {
+        isDrawingRef.current = false;
+        if (activeShapeRef.current) {
+            const shape = activeShapeRef.current;
 
-const handleDownloadPNG = () => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
+            // If it's an arrow, we might want to convert it to a Path or Group for permanent storage
+            if (activeTool === 'arrow' && (shape as fabric.Line).x1 !== undefined) {
+                const line = shape as fabric.Line;
+                const x1 = Math.round(line.x1!);
+                const y1 = Math.round(line.y1!);
+                const x2 = Math.round(line.x2!);
+                const y2 = Math.round(line.y2!);
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
+                const angle = Math.atan2(y2 - y1, x2 - x1);
+                const currentStyle = shapeStyles[activeTool] || DEFAULT_SHAPE_STYLE;
+                const headLength = Math.round(currentStyle.headSize || Math.max(12, brushSize * 3));
+                const headAngle = Math.PI / 6;
 
-    const timestamp = `${year}${month}${day}-${hours}${minutes}${seconds}`;
-    const defaultName = `drawing-${timestamp}`;
-    const fileName = window.prompt(t.drawing?.enter_filename || 'Enter filename:', defaultName);
-
-    if (fileName === null) return; // User cancelled
-
-    const finalFileName = fileName.trim() || defaultName;
-
-    // Get the data URL of the canvas
-    // This includes the background color/pattern
-    const dataURL = canvas.toDataURL({
-        format: 'png',
-        quality: 1,
-        enableRetinaScaling: true
-    });
-
-    // Create a temporary link and trigger download
-    const link = document.createElement('a');
-    link.download = finalFileName.endsWith('.png') ? finalFileName : `${finalFileName}.png`;
-    link.href = dataURL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
-
-const handleUndo = React.useCallback(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    if (historyIndexRef.current > 0) {
-        isUndoRedoRef.current = true;
-        historyIndexRef.current--;
-        const json = historyRef.current[historyIndexRef.current];
-        canvas.loadFromJSON(JSON.parse(json), () => {
-            canvas.renderAll();
-            isUndoRedoRef.current = false;
-            setCanUndo(historyIndexRef.current > 0);
-            setCanRedo(true);
-        });
-    }
-}, []);
-
-const handleRedo = React.useCallback(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    if (historyIndexRef.current < historyRef.current.length - 1) {
-        isUndoRedoRef.current = true;
-        historyIndexRef.current++;
-        const json = historyRef.current[historyIndexRef.current];
-        canvas.loadFromJSON(JSON.parse(json), () => {
-            canvas.renderAll();
-            isUndoRedoRef.current = false;
-            setCanUndo(true);
-            setCanRedo(historyIndexRef.current < historyRef.current.length - 1);
-        });
-    }
-}, []);
-
-const handleExtendHeight = () => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    const currentHeight = canvas.getHeight();
-    const newHeight = currentHeight + 400; // Add 400px
-
-    canvas.setHeight(newHeight);
-    canvas.renderAll();
-    saveHistory();
-};
-
-const handleSave = () => {
-    if (!fabricCanvasRef.current) return;
-    // Ensure dimensions are saved in JSON
-    const canvas = fabricCanvasRef.current;
-    const jsonObj = canvas.toJSON(['width', 'height']);
-    const json = JSON.stringify(jsonObj);
-    onSave(json);
-};
-// Keyboard Shortcuts
-useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-        // Don't trigger shortcuts if user is typing in an input
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-        const key = e.key.toLowerCase();
-
-        // Tool shortcuts
-        switch (key) {
-            case 'p': // Pen
-            case 'b': // Brush (alternative)
-                setActiveTool('pen');
-                break;
-            case 'l': // Line
-                setActiveTool('line');
-                break;
-            case 'a': // Arrow
-                setActiveTool('arrow');
-                break;
-            case 'r': // Rectangle
-                setActiveTool('rect');
-                break;
-            case 'c': // Circle
-                setActiveTool('circle');
-                break;
-            case 't': // Text
-                setActiveTool('text');
-                break;
-            case 'e': // Eraser (pixel)
-                setActiveTool('eraser_pixel');
-                break;
-            case 'd': // Delete eraser (object)
-            case 'x': // Alternative for object eraser
-                setActiveTool('eraser_object');
-                break;
-            case 'z': // Undo / Redo
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-                    e.preventDefault();
-                    handleRedo();
-                } else if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    handleUndo();
-                }
-                break;
-            case 'y': // Alternative redo (Ctrl+Y)
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    handleRedo();
-                }
-                break;
-            case 'escape': // Close modal
-                onClose();
-                break;
-            case 'delete':
-            case 'backspace': {
-                // Delete selected object if any (for object eraser mode or general selection)
+                const x3 = Math.round(x2 - headLength * Math.cos(angle - headAngle));
+                const y3 = Math.round(y2 - headLength * Math.sin(angle - headAngle));
+                const x4 = Math.round(x2 - headLength * Math.cos(angle + headAngle));
+                const y4 = Math.round(y2 - headLength * Math.sin(angle + headAngle));
                 const canvas = fabricCanvasRef.current;
-                if (canvas) {
-                    const activeObject = canvas.getActiveObject();
-                    // If user is editing a text object, let fabric handle backspace/delete
-                    if (activeObject && (activeObject as any).isEditing) {
-                        return;
-                    }
 
-                    const activeObjects = canvas.getActiveObjects();
-                    if (activeObjects.length > 0) {
-                        e.preventDefault();
-                        canvas.discardActiveObject();
-                        activeObjects.forEach((obj) => {
-                            canvas.remove(obj);
-                        });
-                        canvas.requestRenderAll();
-                        saveHistory();
-                    }
+                if (canvas) {
+                    canvas.remove(shape);
+
+                    // Calculate minimal point to use as group origin for precision
+                    const minX = Math.min(x1, x2, x3, x4);
+                    const minY = Math.min(y1, y2, y3, y4);
+
+                    // Line part (can be dashed)
+                    const linePart = new fabric.Line([x1 - minX, y1 - minY, x2 - minX, y2 - minY], {
+                        stroke: color,
+                        strokeWidth: brushSize,
+                        strokeDashArray: currentStyle.dashArray,
+                        strokeLineCap: 'round',
+                        originX: 'left',
+                        originY: 'top',
+                        left: x1 < x2 ? 0 : x1 - x2 // This is handled by Line, but let's be careful
+                    });
+                    // Re-set absolute positioning for Line based on the parent group's left/top
+                    linePart.set({ left: Math.min(x1, x2) - minX, top: Math.min(y1, y2) - minY });
+
+                    // Head part (always solid)
+                    const headPart = new fabric.Polyline([
+                        new fabric.Point(x3 - minX, y3 - minY),
+                        new fabric.Point(x2 - minX, y2 - minY),
+                        new fabric.Point(x4 - minX, y4 - minY)
+                    ], {
+                        stroke: color,
+                        strokeWidth: brushSize,
+                        strokeDashArray: undefined,
+                        fill: 'transparent',
+                        strokeLineCap: 'round',
+                        strokeLineJoin: 'round',
+                        originX: 'left',
+                        originY: 'top',
+                        left: Math.min(x2, x3, x4) - minX,
+                        top: Math.min(y2, y3, y4) - minY
+                    });
+
+                    const arrowGroup = new fabric.Group([linePart, headPart], {
+                        selectable: false,
+                        evented: true,
+                        isArrow: true,
+                        opacity: (currentStyle.opacity || 100) / 100,
+                        left: minX,
+                        top: minY,
+                        originX: 'left',
+                        originY: 'top'
+                    } as any);
+
+                    canvas.add(arrowGroup);
                 }
-                break;
             }
-            // Brush size shortcuts (1-4)
-            case '1':
-                setBrushSize(availableBrushSizes[0]);
-                updateToolSetting(undefined, availableBrushSizes[0]);
-                break;
-            case '2':
-                setBrushSize(availableBrushSizes[1]);
-                updateToolSetting(undefined, availableBrushSizes[1]);
-                break;
-            case '3':
-                setBrushSize(availableBrushSizes[2]);
-                updateToolSetting(undefined, availableBrushSizes[2]);
-                break;
-            case '4':
-                setBrushSize(availableBrushSizes[3]);
-                updateToolSetting(undefined, availableBrushSizes[3]);
-                break;
+
+            if (arrowHeadPreviewRef.current) {
+                const canvas = fabricCanvasRef.current;
+                if (canvas) canvas.remove(arrowHeadPreviewRef.current);
+                arrowHeadPreviewRef.current = null;
+            }
+
+            activeShapeRef.current.setCoords();
+            activeShapeRef.current = null;
         }
+    }, [activeTool, color, brushSize, shapeStyles]);
+
+    const handleClear = () => {
+        if (!fabricCanvasRef.current) return;
+        fabricCanvasRef.current.clear();
+        fabricCanvasRef.current.setBackgroundColor('#ffffff', () => {
+            fabricCanvasRef.current?.renderAll();
+        });
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-}, [onClose, availableBrushSizes, handleUndo, handleRedo, setBrushSize, updateToolSetting, saveHistory]);
+    const handleDownloadPNG = () => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
 
-// Tool Switching Logic
-useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
 
-    // Reset default states
-    canvas.isDrawingMode = false;
-    canvas.selection = false;
-    canvas.defaultCursor = 'default';
-    canvas.hoverCursor = 'default';
+        const timestamp = `${year}${month}${day}-${hours}${minutes}${seconds}`;
+        const defaultName = `drawing-${timestamp}`;
+        const fileName = window.prompt(t.drawing?.enter_filename || 'Enter filename:', defaultName);
 
-    // Disable selection on all objects by default
-    canvas.forEachObject((obj) => {
-        obj.set({
-            selectable: false,
-            evented: true,
-            hoverCursor: 'default'
+        if (fileName === null) return; // User cancelled
+
+        const finalFileName = fileName.trim() || defaultName;
+
+        // Get the data URL of the canvas
+        // This includes the background color/pattern
+        const dataURL = canvas.toDataURL({
+            format: 'png',
+            quality: 1,
+            enableRetinaScaling: true
         });
-    });
 
-    // Remove object erasing listener if present (we'll re-add if needed)
-    canvas.off('mouse:down');
-    canvas.off('mouse:move');
-    canvas.off('mouse:up');
+        // Create a temporary link and trigger download
+        const link = document.createElement('a');
+        link.download = finalFileName.endsWith('.png') ? finalFileName : `${finalFileName}.png`;
+        link.href = dataURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
-    // Re-attach standard listeners if needed (none strictly for now unless shape)
+    const handleUndo = React.useCallback(() => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
 
-    switch (activeTool) {
-        case 'select':
-            canvas.isDrawingMode = false;
-            canvas.selection = true;
-            canvas.defaultCursor = 'default';
-            canvas.forEachObject((obj) => {
-                obj.set({
-                    selectable: true,
-                    evented: true,
-                    hoverCursor: 'move'
-                });
+        if (historyIndexRef.current > 0) {
+            isUndoRedoRef.current = true;
+            historyIndexRef.current--;
+            const json = historyRef.current[historyIndexRef.current];
+            canvas.loadFromJSON(JSON.parse(json), () => {
+                canvas.renderAll();
+                isUndoRedoRef.current = false;
+                setCanUndo(historyIndexRef.current > 0);
+                setCanRedo(true);
             });
-            canvas.requestRenderAll();
-            break;
-
-        case 'pen':
-            canvas.isDrawingMode = true;
-            if (brushType === 'spray') {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                canvas.freeDrawingBrush = new (fabric as any).SprayBrush(canvas);
-            } else if (brushType === 'circle') {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                canvas.freeDrawingBrush = new (fabric as any).CircleBrush(canvas);
-            } else if (brushType === 'highlighter') {
-                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (canvas.freeDrawingBrush as any).strokeLinecap = 'butt';
-            } else if (brushType === 'glow') {
-                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-                canvas.freeDrawingBrush.shadow = new fabric.Shadow({
-                    blur: 15,
-                    offsetX: 0,
-                    offsetY: 0,
-                    color: color
-                });
-            } else if (brushType === 'pencil') {
-                // "True" Pencil Texture using sharp noise
-                const patternCanvas = document.createElement('canvas');
-                const patternSize = 64;
-                patternCanvas.width = patternSize;
-                patternCanvas.height = patternSize;
-                const pCtx = patternCanvas.getContext('2d');
-
-                if (pCtx) {
-                    // We need a sharp, grainy texture.
-                    // Instead of soft circles, we use 1px rectangles for distinct graphite particles.
-                    const imageData = pCtx.createImageData(patternSize, patternSize);
-                    const data = imageData.data;
-
-                    // Parse color to RGB
-                    let r = 0, g = 0, b = 0;
-                    if (color.startsWith('#')) {
-                        const hex = color.length === 4 ? color + color.slice(1) : color; // handle #000
-                        r = parseInt(hex.slice(1, 3), 16);
-                        g = parseInt(hex.slice(3, 5), 16);
-                        b = parseInt(hex.slice(5, 7), 16);
-                    } else if (color.startsWith('rgb')) {
-                        const rgb = color.match(/\d+/g);
-                        if (rgb) {
-                            r = parseInt(rgb[0]);
-                            g = parseInt(rgb[1]);
-                            b = parseInt(rgb[2]);
-                        }
-                    }
-
-                    // Fill with noise
-                    for (let i = 0; i < data.length; i += 4) {
-                        // Probability of a "graphite particle" hitting the paper grain
-                        // 30% chance of a mark, varying opacity for pressure simulation
-                        if (Math.random() < 0.25) {
-                            data[i] = r;     // R
-                            data[i + 1] = g; // G
-                            data[i + 2] = b; // B
-                            // Alpha: Random between 20 (faint) and 200 (dark), favoring lighter
-                            // This variation creates the "texture"
-                            data[i + 3] = Math.floor(Math.random() * 150) + 30;
-                        } else {
-                            data[i + 3] = 0; // Transparent
-                        }
-                    }
-
-                    pCtx.putImageData(imageData, 0, 0);
-                }
-
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                canvas.freeDrawingBrush = new (fabric as any).PatternBrush(canvas);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (canvas.freeDrawingBrush as any).source = patternCanvas;
-            } else if (brushType === 'pen') {
-                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-            } else {
-                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-            }
-
-            canvas.freeDrawingBrush.color = (brushType === 'highlighter')
-                ? color.replace(')', ', 0.3)').replace('rgb', 'rgba').replace('#', color) // Basic alpha support
-                : color;
-
-            // Better highlighter color handling
-            if (brushType === 'highlighter') {
-                if (color.startsWith('#')) {
-                    const r = parseInt(color.slice(1, 3), 16);
-                    const g = parseInt(color.slice(3, 5), 16);
-                    const b = parseInt(color.slice(5, 7), 16);
-                    canvas.freeDrawingBrush.color = `rgba(${r}, ${g}, ${b}, 0.3)`;
-                }
-            }
-
-            canvas.freeDrawingBrush.width = (brushType === 'highlighter')
-                ? brushSize * 2 : brushSize;
-            canvas.defaultCursor = 'crosshair';
-            break;
-
-        case 'eraser_pixel':
-            canvas.isDrawingMode = true;
-            canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-            canvas.freeDrawingBrush.color = '#ffffff'; // Simple white eraser
-            canvas.freeDrawingBrush.width = brushSize * 4; // Wider
-            // canvas.defaultCursor = 'url("eraser_cursor")'; // if we had one
-            break;
-
-        case 'eraser_object': {
-            canvas.isDrawingMode = false;
-            canvas.defaultCursor = 'pointer';
-            canvas.hoverCursor = 'not-allowed';
-
-            // Enable events on all objects so they can be detected
-            canvas.forEachObject((obj) => {
-                obj.set({
-                    selectable: false,
-                    evented: true,
-                    hoverCursor: 'not-allowed'
-                });
-            });
-            canvas.requestRenderAll();
-
-            let isErasingDragging = false;
-
-            canvas.on('mouse:down', (opt) => {
-                isErasingDragging = true;
-                if (opt.target) {
-                    canvas.remove(opt.target);
-                    canvas.requestRenderAll();
-                }
-            });
-
-            canvas.on('mouse:move', (opt) => {
-                if (isErasingDragging && opt.target) {
-                    canvas.remove(opt.target);
-                    canvas.requestRenderAll();
-                }
-            });
-
-            canvas.on('mouse:up', () => {
-                isErasingDragging = false;
-            });
-            break;
         }
+    }, []);
 
-        case 'text':
-            canvas.isDrawingMode = false;
-            canvas.defaultCursor = 'text';
-            canvas.on('mouse:down', (opt) => {
-                // Only add text if clicking on empty area
-                if (opt.target) return;
+    const handleRedo = React.useCallback(() => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
 
-                const pointer = canvas.getPointer(opt.e);
-                const text = new fabric.IText('Type here...', {
-                    left: pointer.x,
-                    top: pointer.y,
-                    fontFamily: fontFamily,
-                    fontSize: Math.max(16, brushSize * 4),
-                    fill: color,
-                    editable: true,
-                    selectable: true,
-                    evented: true,
-                });
-                canvas.add(text);
-                canvas.setActiveObject(text);
-                text.enterEditing();
-                text.selectAll();
-                canvas.requestRenderAll();
+        if (historyIndexRef.current < historyRef.current.length - 1) {
+            isUndoRedoRef.current = true;
+            historyIndexRef.current++;
+            const json = historyRef.current[historyIndexRef.current];
+            canvas.loadFromJSON(JSON.parse(json), () => {
+                canvas.renderAll();
+                isUndoRedoRef.current = false;
+                setCanUndo(true);
+                setCanRedo(historyIndexRef.current < historyRef.current.length - 1);
             });
-            break;
+        }
+    }, []);
 
-        case 'line':
-        case 'arrow':
-        case 'rect':
-        case 'circle':
-        case 'triangle':
-        case 'ellipse':
-        case 'diamond':
-            canvas.defaultCursor = 'crosshair';
-            // Attach shape drawing handlers
-            canvas.on('mouse:down', handleShapeMouseDown);
-            canvas.on('mouse:move', handleShapeMouseMove);
-            canvas.on('mouse:up', handleShapeMouseUp);
-            break;
-    }
+    const handleExtendHeight = () => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
 
-}, [activeTool, color, brushSize, shapeStyles, brushType, fontFamily, handleShapeMouseDown, handleShapeMouseMove, handleShapeMouseUp]);
+        const currentHeight = canvas.getHeight();
+        const newHeight = currentHeight + 400; // Add 400px
 
-useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    const activeObjects = canvas.getActiveObjects();
-    if (activeObjects.length > 0) {
-        activeObjects.forEach((obj) => {
-            if ((obj as any).isArrow && obj.type === 'group') {
-                const group = obj as fabric.Group;
-                group.getObjects().forEach((child, index) => {
-                    child.set({ stroke: color, strokeWidth: brushSize });
-                    // child 0 is the line, keep its dash if applicable
-                    // child 1 is the head, always solid
-                    if (index === 0) {
-                        const currentStyle = shapeStyles['arrow'] || DEFAULT_SHAPE_STYLE;
-                        child.set({ strokeDashArray: currentStyle.dashArray });
-                    } else {
-                        child.set({ strokeDashArray: undefined });
-                    }
-                });
-            } else if (obj.type === 'i-text' || obj.type === 'text') {
-                obj.set({ fill: color });
-            } else {
-                obj.set({ stroke: color, strokeWidth: brushSize });
-            }
-
-            // Also update toolSettings for this object type
-            const objType = (obj as any).isArrow ? 'arrow' :
-                (obj as any).isDiamond ? 'diamond' :
-                    (obj.type === 'i-text' || obj.type === 'text') ? 'text' :
-                        obj.type === 'path' ? 'pen' :
-                            obj.type === 'rect' ? 'rect' :
-                                obj.type === 'circle' ? 'circle' :
-                                    obj.type === 'triangle' ? 'triangle' :
-                                        obj.type === 'ellipse' ? 'ellipse' :
-                                            obj.type;
-
-            // Special case for pen types if we can detect them, but 'pen' is default
-            let targetKey = objType as string;
-            if (targetKey === 'path') targetKey = brushType; // Fallback to current brush type if it's a path
-
-            setToolSettings(prev => ({
-                ...prev,
-                [targetKey]: { color, size: brushSize }
-            }));
-        });
-        canvas.requestRenderAll();
-        saveHistory();
-    }
-}, [color, brushSize, brushType, shapeStyles, saveHistory]);
-
-// Handle background change
-useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    const pattern = createBackgroundPattern(background);
-    canvas.setBackgroundColor(pattern, () => {
+        canvas.setHeight(newHeight);
         canvas.renderAll();
-    });
-}, [background]);
+        saveHistory();
+    };
 
-return (
-    <ModalOverlay onClick={(e) => {
-        if (e.target === e.currentTarget) {
-            // If any settings modal is open (Level 1)
-            if (isColorEditOpen || isSizeEditOpen || isShapeSettingsOpen || isPenEditOpen || isFontEditOpen) {
-                // If we just interacted with an input (like the native color picker),
-                // ignore the first backdrop click so the user stays in the sub-modal.
-                if (Date.now() - lastInteractionTimeRef.current > 500) {
-                    handleColorOk();
-                    handleSizeOk();
-                    handleShapeSettingsOk();
-                    handlePenOk();
-                    handleFontOk();
-                }
-            } else {
-                // Only close the main modal (Level 0) if no settings are open
-                // and some time has passed since the last interaction
-                if (Date.now() - lastInteractionTimeRef.current > 300) {
+    const handleSave = () => {
+        if (!fabricCanvasRef.current) return;
+        // Ensure dimensions are saved in JSON
+        const canvas = fabricCanvasRef.current;
+        const jsonObj = canvas.toJSON(['width', 'height']);
+        const json = JSON.stringify(jsonObj);
+        onSave(json);
+    };
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't trigger shortcuts if user is typing in an input
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            const key = e.key.toLowerCase();
+
+            // Tool shortcuts
+            switch (key) {
+                case 'p': // Pen
+                case 'b': // Brush (alternative)
+                    setActiveTool('pen');
+                    break;
+                case 'l': // Line
+                    setActiveTool('line');
+                    break;
+                case 'a': // Arrow
+                    setActiveTool('arrow');
+                    break;
+                case 'r': // Rectangle
+                    setActiveTool('rect');
+                    break;
+                case 'c': // Circle
+                    setActiveTool('circle');
+                    break;
+                case 't': // Text
+                    setActiveTool('text');
+                    break;
+                case 'e': // Eraser (pixel)
+                    setActiveTool('eraser_pixel');
+                    break;
+                case 'd': // Delete eraser (object)
+                case 'x': // Alternative for object eraser
+                    setActiveTool('eraser_object');
+                    break;
+                case 'z': // Undo / Redo
+                    if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+                        e.preventDefault();
+                        handleRedo();
+                    } else if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        handleUndo();
+                    }
+                    break;
+                case 'y': // Alternative redo (Ctrl+Y)
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        handleRedo();
+                    }
+                    break;
+                case 'escape': // Close modal
                     onClose();
+                    break;
+                case 'delete':
+                case 'backspace': {
+                    // Delete selected object if any (for object eraser mode or general selection)
+                    const canvas = fabricCanvasRef.current;
+                    if (canvas) {
+                        const activeObject = canvas.getActiveObject();
+                        // If user is editing a text object, let fabric handle backspace/delete
+                        if (activeObject && (activeObject as any).isEditing) {
+                            return;
+                        }
+
+                        const activeObjects = canvas.getActiveObjects();
+                        if (activeObjects.length > 0) {
+                            e.preventDefault();
+                            canvas.discardActiveObject();
+                            activeObjects.forEach((obj) => {
+                                canvas.remove(obj);
+                            });
+                            canvas.requestRenderAll();
+                            saveHistory();
+                        }
+                    }
+                    break;
+                }
+                // Brush size shortcuts (1-4)
+                case '1':
+                    setBrushSize(availableBrushSizes[0]);
+                    updateToolSetting(undefined, availableBrushSizes[0]);
+                    break;
+                case '2':
+                    setBrushSize(availableBrushSizes[1]);
+                    updateToolSetting(undefined, availableBrushSizes[1]);
+                    break;
+                case '3':
+                    setBrushSize(availableBrushSizes[2]);
+                    updateToolSetting(undefined, availableBrushSizes[2]);
+                    break;
+                case '4':
+                    setBrushSize(availableBrushSizes[3]);
+                    updateToolSetting(undefined, availableBrushSizes[3]);
+                    break;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose, availableBrushSizes, handleUndo, handleRedo, setBrushSize, updateToolSetting, saveHistory]);
+
+    // Tool Switching Logic
+    useEffect(() => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        // Reset default states
+        canvas.isDrawingMode = false;
+        canvas.selection = false;
+        canvas.defaultCursor = 'default';
+        canvas.hoverCursor = 'default';
+
+        // Disable selection on all objects by default
+        canvas.forEachObject((obj) => {
+            obj.set({
+                selectable: false,
+                evented: true,
+                hoverCursor: 'default'
+            });
+        });
+
+        // Remove object erasing listener if present (we'll re-add if needed)
+        canvas.off('mouse:down');
+        canvas.off('mouse:move');
+        canvas.off('mouse:up');
+
+        // Re-attach standard listeners if needed (none strictly for now unless shape)
+
+        switch (activeTool) {
+            case 'select':
+                canvas.isDrawingMode = false;
+                canvas.selection = true;
+                canvas.defaultCursor = 'default';
+                canvas.forEachObject((obj) => {
+                    obj.set({
+                        selectable: true,
+                        evented: true,
+                        hoverCursor: 'move'
+                    });
+                });
+                canvas.requestRenderAll();
+                break;
+
+            case 'pen':
+                canvas.isDrawingMode = true;
+                if (brushType === 'spray') {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    canvas.freeDrawingBrush = new (fabric as any).SprayBrush(canvas);
+                } else if (brushType === 'circle') {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    canvas.freeDrawingBrush = new (fabric as any).CircleBrush(canvas);
+                } else if (brushType === 'highlighter') {
+                    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (canvas.freeDrawingBrush as any).strokeLinecap = 'butt';
+                } else if (brushType === 'glow') {
+                    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                    canvas.freeDrawingBrush.shadow = new fabric.Shadow({
+                        blur: 15,
+                        offsetX: 0,
+                        offsetY: 0,
+                        color: color
+                    });
+                } else if (brushType === 'pencil') {
+                    // "True" Pencil Texture using sharp noise
+                    const patternCanvas = document.createElement('canvas');
+                    const patternSize = 64;
+                    patternCanvas.width = patternSize;
+                    patternCanvas.height = patternSize;
+                    const pCtx = patternCanvas.getContext('2d');
+
+                    if (pCtx) {
+                        // We need a sharp, grainy texture.
+                        // Instead of soft circles, we use 1px rectangles for distinct graphite particles.
+                        const imageData = pCtx.createImageData(patternSize, patternSize);
+                        const data = imageData.data;
+
+                        // Parse color to RGB
+                        let r = 0, g = 0, b = 0;
+                        if (color.startsWith('#')) {
+                            const hex = color.length === 4 ? color + color.slice(1) : color; // handle #000
+                            r = parseInt(hex.slice(1, 3), 16);
+                            g = parseInt(hex.slice(3, 5), 16);
+                            b = parseInt(hex.slice(5, 7), 16);
+                        } else if (color.startsWith('rgb')) {
+                            const rgb = color.match(/\d+/g);
+                            if (rgb) {
+                                r = parseInt(rgb[0]);
+                                g = parseInt(rgb[1]);
+                                b = parseInt(rgb[2]);
+                            }
+                        }
+
+                        // Fill with noise
+                        for (let i = 0; i < data.length; i += 4) {
+                            // Probability of a "graphite particle" hitting the paper grain
+                            // 30% chance of a mark, varying opacity for pressure simulation
+                            if (Math.random() < 0.25) {
+                                data[i] = r;     // R
+                                data[i + 1] = g; // G
+                                data[i + 2] = b; // B
+                                // Alpha: Random between 20 (faint) and 200 (dark), favoring lighter
+                                // This variation creates the "texture"
+                                data[i + 3] = Math.floor(Math.random() * 150) + 30;
+                            } else {
+                                data[i + 3] = 0; // Transparent
+                            }
+                        }
+
+                        pCtx.putImageData(imageData, 0, 0);
+                    }
+
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    canvas.freeDrawingBrush = new (fabric as any).PatternBrush(canvas);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (canvas.freeDrawingBrush as any).source = patternCanvas;
+                } else if (brushType === 'pen') {
+                    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                } else {
+                    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                }
+
+                canvas.freeDrawingBrush.color = (brushType === 'highlighter')
+                    ? color.replace(')', ', 0.3)').replace('rgb', 'rgba').replace('#', color) // Basic alpha support
+                    : color;
+
+                // Better highlighter color handling
+                if (brushType === 'highlighter') {
+                    if (color.startsWith('#')) {
+                        const r = parseInt(color.slice(1, 3), 16);
+                        const g = parseInt(color.slice(3, 5), 16);
+                        const b = parseInt(color.slice(5, 7), 16);
+                        canvas.freeDrawingBrush.color = `rgba(${r}, ${g}, ${b}, 0.3)`;
+                    }
+                }
+
+                canvas.freeDrawingBrush.width = (brushType === 'highlighter')
+                    ? brushSize * 2 : brushSize;
+                canvas.defaultCursor = 'crosshair';
+                break;
+
+            case 'eraser_pixel':
+                canvas.isDrawingMode = true;
+                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                canvas.freeDrawingBrush.color = '#ffffff'; // Simple white eraser
+                canvas.freeDrawingBrush.width = brushSize * 4; // Wider
+                // canvas.defaultCursor = 'url("eraser_cursor")'; // if we had one
+                break;
+
+            case 'eraser_object': {
+                canvas.isDrawingMode = false;
+                canvas.defaultCursor = 'pointer';
+                canvas.hoverCursor = 'not-allowed';
+
+                // Enable events on all objects so they can be detected
+                canvas.forEachObject((obj) => {
+                    obj.set({
+                        selectable: false,
+                        evented: true,
+                        hoverCursor: 'not-allowed'
+                    });
+                });
+                canvas.requestRenderAll();
+
+                let isErasingDragging = false;
+
+                canvas.on('mouse:down', (opt) => {
+                    isErasingDragging = true;
+                    if (opt.target) {
+                        canvas.remove(opt.target);
+                        canvas.requestRenderAll();
+                    }
+                });
+
+                canvas.on('mouse:move', (opt) => {
+                    if (isErasingDragging && opt.target) {
+                        canvas.remove(opt.target);
+                        canvas.requestRenderAll();
+                    }
+                });
+
+                canvas.on('mouse:up', () => {
+                    isErasingDragging = false;
+                });
+                break;
+            }
+
+            case 'text':
+                canvas.isDrawingMode = false;
+                canvas.defaultCursor = 'text';
+                canvas.on('mouse:down', (opt) => {
+                    // Only add text if clicking on empty area
+                    if (opt.target) return;
+
+                    const pointer = canvas.getPointer(opt.e);
+                    const text = new fabric.IText('Type here...', {
+                        left: pointer.x,
+                        top: pointer.y,
+                        fontFamily: fontFamily,
+                        fontSize: Math.max(16, brushSize * 4),
+                        fill: color,
+                        editable: true,
+                        selectable: true,
+                        evented: true,
+                    });
+                    canvas.add(text);
+                    canvas.setActiveObject(text);
+                    text.enterEditing();
+                    text.selectAll();
+                    canvas.requestRenderAll();
+                });
+                break;
+
+            case 'line':
+            case 'arrow':
+            case 'rect':
+            case 'circle':
+            case 'triangle':
+            case 'ellipse':
+            case 'diamond':
+                canvas.defaultCursor = 'crosshair';
+                // Attach shape drawing handlers
+                canvas.on('mouse:down', handleShapeMouseDown);
+                canvas.on('mouse:move', handleShapeMouseMove);
+                canvas.on('mouse:up', handleShapeMouseUp);
+                break;
+        }
+
+    }, [activeTool, color, brushSize, shapeStyles, brushType, fontFamily, handleShapeMouseDown, handleShapeMouseMove, handleShapeMouseUp]);
+
+    useEffect(() => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        const activeObjects = canvas.getActiveObjects();
+        if (activeObjects.length > 0) {
+            activeObjects.forEach((obj) => {
+                if ((obj as any).isArrow && obj.type === 'group') {
+                    const group = obj as fabric.Group;
+                    group.getObjects().forEach((child, index) => {
+                        child.set({ stroke: color, strokeWidth: brushSize });
+                        // child 0 is the line, keep its dash if applicable
+                        // child 1 is the head, always solid
+                        if (index === 0) {
+                            const currentStyle = shapeStyles['arrow'] || DEFAULT_SHAPE_STYLE;
+                            child.set({ strokeDashArray: currentStyle.dashArray });
+                        } else {
+                            child.set({ strokeDashArray: undefined });
+                        }
+                    });
+                } else if (obj.type === 'i-text' || obj.type === 'text') {
+                    obj.set({ fill: color });
+                } else {
+                    obj.set({ stroke: color, strokeWidth: brushSize });
+                }
+
+                // Also update toolSettings for this object type
+                const objType = (obj as any).isArrow ? 'arrow' :
+                    (obj as any).isDiamond ? 'diamond' :
+                        (obj.type === 'i-text' || obj.type === 'text') ? 'text' :
+                            obj.type === 'path' ? 'pen' :
+                                obj.type === 'rect' ? 'rect' :
+                                    obj.type === 'circle' ? 'circle' :
+                                        obj.type === 'triangle' ? 'triangle' :
+                                            obj.type === 'ellipse' ? 'ellipse' :
+                                                obj.type;
+
+                // Special case for pen types if we can detect them, but 'pen' is default
+                let targetKey = objType as string;
+                if (targetKey === 'path') targetKey = brushType; // Fallback to current brush type if it's a path
+
+                setToolSettings(prev => ({
+                    ...prev,
+                    [targetKey]: { color, size: brushSize }
+                }));
+            });
+            canvas.requestRenderAll();
+            saveHistory();
+        }
+    }, [color, brushSize, brushType, shapeStyles, saveHistory]);
+
+    // Handle background change
+    useEffect(() => {
+        const canvas = fabricCanvasRef.current;
+        if (!canvas) return;
+
+        const pattern = createBackgroundPattern(background);
+        canvas.setBackgroundColor(pattern, () => {
+            canvas.renderAll();
+        });
+    }, [background]);
+
+    return (
+        <ModalOverlay onClick={(e) => {
+            if (e.target === e.currentTarget) {
+                // If any settings modal is open (Level 1)
+                if (isColorEditOpen || isSizeEditOpen || isShapeSettingsOpen || isPenEditOpen || isFontEditOpen) {
+                    // If we just interacted with an input (like the native color picker),
+                    // ignore the first backdrop click so the user stays in the sub-modal.
+                    if (Date.now() - lastInteractionTimeRef.current > 500) {
+                        handleColorOk();
+                        handleSizeOk();
+                        handleShapeSettingsOk();
+                        handlePenOk();
+                        handleFontOk();
+                    }
+                } else {
+                    // Only close the main modal (Level 0) if no settings are open
+                    // and some time has passed since the last interaction
+                    if (Date.now() - lastInteractionTimeRef.current > 300) {
+                        onClose();
+                    }
                 }
             }
-        }
-    }}>
-        <ModalContainer>
-            <Header>
-                <Title>{t.drawing?.title || 'Drawing'}</Title>
-                <FooterButtons>
-                    <ActionButton onClick={onClose}>
-                        <FiX /> {t.drawing?.cancel || 'Cancel'}
-                    </ActionButton>
-                    <ActionButton $primary onClick={handleSave}>
-                        <FiCheck /> {t.drawing?.insert || 'Insert'}
-                    </ActionButton>
-                </FooterButtons>
-            </Header>
+        }}>
+            <ModalContainer>
+                <Header>
+                    <Title>{t.drawing?.title || 'Drawing'}</Title>
+                    <FooterButtons>
+                        <ActionButton onClick={onClose}>
+                            <FiX /> {t.drawing?.cancel || 'Cancel'}
+                        </ActionButton>
+                        <ActionButton $primary onClick={handleSave}>
+                            <FiCheck /> {t.drawing?.insert || 'Insert'}
+                        </ActionButton>
+                    </FooterButtons>
+                </Header>
 
-            <Toolbar>
-                <ToolGroup>
-                    {toolbarItems.map((item, index) => renderToolbarItem(item, index))}
-                </ToolGroup>
-            </Toolbar>
-            {isColorEditOpen && (
-                <Backdrop
-                    $centered={!settingsAnchor}
-                    onClick={(e) => {
-                        const now = Date.now();
-                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
-                        if (e.target === e.currentTarget) handleColorOk();
-                    }}>
-                    <CompactModal
-                        $anchor={settingsAnchor || undefined}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <ColorInputWrapper>
-                            <HexColorPicker
-                                color={tempColor}
-                                onChange={(newColor) => {
-                                    setTempColor(newColor);
-                                    lastInteractionTimeRef.current = Date.now();
-                                }}
-                                style={{ width: '100%', height: '180px' }}
-                            />
-                            <div style={{ fontSize: '0.75rem', color: '#888', fontWeight: 500, marginTop: '8px' }}>
-                                {tempColor.toUpperCase()}
-                            </div>
-                        </ColorInputWrapper>
-                        <CompactModalFooter>
-                            <CompactModalButton onClick={handleColorReset}>
-                                {t.drawing?.reset || 'Reset'}
-                            </CompactModalButton>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <CompactModalButton onClick={handleColorCancel}>
-                                    {t.drawing?.cancel || 'Cancel'}
+                <Toolbar>
+                    <ToolGroup>
+                        {toolbarItems.map((item, index) => renderToolbarItem(item, index))}
+                    </ToolGroup>
+                </Toolbar>
+                {isColorEditOpen && (
+                    <Backdrop
+                        $centered={!settingsAnchor}
+                        onClick={(e) => {
+                            const now = Date.now();
+                            if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                            if (e.target === e.currentTarget) handleColorOk();
+                        }}>
+                        <CompactModal
+                            $anchor={settingsAnchor || undefined}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <ColorInputWrapper>
+                                <HexColorPicker
+                                    color={tempColor}
+                                    onChange={(newColor) => {
+                                        setTempColor(newColor);
+                                        lastInteractionTimeRef.current = Date.now();
+                                    }}
+                                    style={{ width: '100%', height: '180px' }}
+                                />
+                                <div style={{ fontSize: '0.75rem', color: '#888', fontWeight: 500, marginTop: '8px' }}>
+                                    {tempColor.toUpperCase()}
+                                </div>
+                            </ColorInputWrapper>
+                            <CompactModalFooter>
+                                <CompactModalButton onClick={handleColorReset}>
+                                    {t.drawing?.reset || 'Reset'}
                                 </CompactModalButton>
-                                <CompactModalButton onClick={handleColorOk} $variant="primary">
-                                    {t.drawing?.ok || 'OK'}
-                                </CompactModalButton>
-                            </div>
-                        </CompactModalFooter>
-                    </CompactModal>
-                </Backdrop>
-            )}
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <CompactModalButton onClick={handleColorCancel}>
+                                        {t.drawing?.cancel || 'Cancel'}
+                                    </CompactModalButton>
+                                    <CompactModalButton onClick={handleColorOk} $variant="primary">
+                                        {t.drawing?.ok || 'OK'}
+                                    </CompactModalButton>
+                                </div>
+                            </CompactModalFooter>
+                        </CompactModal>
+                    </Backdrop>
+                )}
 
-            {isSizeEditOpen && (
-                <Backdrop
-                    $centered={!settingsAnchor}
-                    onClick={(e) => {
-                        const now = Date.now();
-                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
-                        if (e.target === e.currentTarget) handleSizeOk();
-                    }}>
-                    <CompactModal
-                        $anchor={settingsAnchor || undefined}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <ColorInputWrapper>
-                            <CustomRangeInput
-                                type="range"
-                                min="1"
-                                max="100"
-                                $size={tempSize}
-                                value={tempSize}
-                                onChange={(e) => setTempSize(parseInt(e.target.value))}
-                            />
-                            <CustomNumberInput
-                                type="number"
-                                min="1"
-                                max="500"
-                                value={tempSize}
-                                onChange={(e) => setTempSize(parseInt(e.target.value) || 1)}
-                            />
-                        </ColorInputWrapper>
-                        <CompactModalFooter>
-                            <CompactModalButton onClick={handleSizeReset}>
-                                {t.drawing?.reset || 'Reset'}
-                            </CompactModalButton>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <CompactModalButton onClick={handleSizeCancel}>
-                                    {t.drawing?.cancel || 'Cancel'}
+                {isSizeEditOpen && (
+                    <Backdrop
+                        $centered={!settingsAnchor}
+                        onClick={(e) => {
+                            const now = Date.now();
+                            if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                            if (e.target === e.currentTarget) handleSizeOk();
+                        }}>
+                        <CompactModal
+                            $anchor={settingsAnchor || undefined}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <ColorInputWrapper>
+                                <CustomRangeInput
+                                    type="range"
+                                    min="1"
+                                    max="100"
+                                    $size={tempSize}
+                                    value={tempSize}
+                                    onChange={(e) => setTempSize(parseInt(e.target.value))}
+                                />
+                                <CustomNumberInput
+                                    type="number"
+                                    min="1"
+                                    max="500"
+                                    value={tempSize}
+                                    onChange={(e) => setTempSize(parseInt(e.target.value) || 1)}
+                                />
+                            </ColorInputWrapper>
+                            <CompactModalFooter>
+                                <CompactModalButton onClick={handleSizeReset}>
+                                    {t.drawing?.reset || 'Reset'}
                                 </CompactModalButton>
-                                <CompactModalButton onClick={handleSizeOk} $variant="primary">
-                                    {t.drawing?.ok || 'OK'}
-                                </CompactModalButton>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <CompactModalButton onClick={handleSizeCancel}>
+                                        {t.drawing?.cancel || 'Cancel'}
+                                    </CompactModalButton>
+                                    <CompactModalButton onClick={handleSizeOk} $variant="primary">
+                                        {t.drawing?.ok || 'OK'}
+                                    </CompactModalButton>
+                                </div>
+                            </CompactModalFooter>
+                        </CompactModal>
+                    </Backdrop>
+                )}
+                {isShapeSettingsOpen && (
+                    <Backdrop
+                        $centered={!settingsAnchor}
+                        onClick={(e) => {
+                            const now = Date.now();
+                            if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                            if (e.target === e.currentTarget) handleShapeSettingsOk();
+                        }}>
+                        <CompactModal
+                            $anchor={settingsAnchor || undefined}
+                            onClick={e => e.stopPropagation()}
+                            style={{ minWidth: '160px' }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {DASH_OPTIONS.map((dash, index) => (
+                                    <DashOption
+                                        key={index}
+                                        $active={tempDashIndex === index}
+                                        onClick={() => setTempDashIndex(index)}
+                                    >
+                                        <DashPreview $dash={dash || null} />
+                                    </DashOption>
+                                ))}
                             </div>
-                        </CompactModalFooter>
-                    </CompactModal>
-                </Backdrop>
-            )}
-            {isShapeSettingsOpen && (
-                <Backdrop
-                    $centered={!settingsAnchor}
-                    onClick={(e) => {
-                        const now = Date.now();
-                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
-                        if (e.target === e.currentTarget) handleShapeSettingsOk();
-                    }}>
-                    <CompactModal
-                        $anchor={settingsAnchor || undefined}
-                        onClick={e => e.stopPropagation()}
-                        style={{ minWidth: '160px' }}
-                    >
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {DASH_OPTIONS.map((dash, index) => (
-                                <DashOption
-                                    key={index}
-                                    $active={tempDashIndex === index}
-                                    onClick={() => setTempDashIndex(index)}
-                                >
-                                    <DashPreview $dash={dash || null} />
-                                </DashOption>
-                            ))}
-                        </div>
-                        <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 4px' }}>
-                            <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 600, minWidth: '35px' }}>
-                                {t.drawing?.opacity || 'Opacity'}
-                            </div>
-                            <CustomRangeInput
-                                type="range"
-                                min="10"
-                                max="100"
-                                $size={6}
-                                $opacityValue={tempShapeOpacity}
-                                value={tempShapeOpacity}
-                                onChange={(e) => setTempShapeOpacity(parseInt(e.target.value))}
-                                style={{ margin: 0, flex: 1 }}
-                            />
-                            <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 500, minWidth: '30px', textAlign: 'right' }}>
-                                {tempShapeOpacity}%
-                            </div>
-                        </div>
-
-                        {activeTool === 'arrow' && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px', borderTop: '1px solid #eee' }}>
+                            <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 4px' }}>
                                 <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 600, minWidth: '35px' }}>
-                                    {t.drawing?.head_size || 'Head'}
+                                    {t.drawing?.opacity || 'Opacity'}
                                 </div>
                                 <CustomRangeInput
                                     type="range"
-                                    min="5"
+                                    min="10"
                                     max="100"
                                     $size={6}
-                                    value={tempHeadSize}
-                                    onChange={(e) => setTempHeadSize(parseInt(e.target.value))}
+                                    $opacityValue={tempShapeOpacity}
+                                    value={tempShapeOpacity}
+                                    onChange={(e) => setTempShapeOpacity(parseInt(e.target.value))}
                                     style={{ margin: 0, flex: 1 }}
                                 />
                                 <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 500, minWidth: '30px', textAlign: 'right' }}>
-                                    {tempHeadSize}px
+                                    {tempShapeOpacity}%
                                 </div>
                             </div>
-                        )}
 
-                        <CompactModalFooter>
-                            <CompactModalButton onClick={handleShapeSettingsReset}>
-                                {t.drawing?.reset || 'Reset'}
-                            </CompactModalButton>
-                            <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                <CompactModalButton onClick={handleShapeSettingsCancel}>
-                                    {t.drawing?.cancel || 'Cancel'}
-                                </CompactModalButton>
-                                <CompactModalButton onClick={handleShapeSettingsOk} $variant="primary">
-                                    {t.drawing?.ok || 'OK'}
-                                </CompactModalButton>
-                            </div>
-                        </CompactModalFooter>
-                    </CompactModal>
-                </Backdrop>
-            )}
-
-            {isPenEditOpen && (
-                <Backdrop
-                    $centered={!settingsAnchor}
-                    onClick={(e) => {
-                        const now = Date.now();
-                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
-                        if (e.target === e.currentTarget) handlePenOk();
-                    }}>
-                    <CompactModal
-                        $anchor={settingsAnchor || undefined}
-                        onClick={e => e.stopPropagation()}
-                        style={{ minWidth: '240px' }}
-                    >
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <DashOption
-                                $active={tempBrushType === 'pen'}
-                                onClick={() => setTempBrushType('pen')}
-                                style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
-                            >
-                                <FiMinus size={18} />
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_pen || 'Pen'}</span>
-                                <BrushSample
-                                    $type="pen"
-                                    $color={toolSettings['pen']?.color || color}
-                                    $size={toolSettings['pen']?.size || brushSize}
-                                />
-                            </DashOption>
-                            <DashOption
-                                $active={tempBrushType === 'pencil'}
-                                onClick={() => setTempBrushType('pencil')}
-                                style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
-                            >
-                                <FiEdit2 size={18} />
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_pencil || 'Pencil'}</span>
-                                <BrushSample
-                                    $type="pencil"
-                                    $color={toolSettings['pencil']?.color || color}
-                                    $size={toolSettings['pencil']?.size || brushSize}
-                                />
-                            </DashOption>
-                            <DashOption
-                                $active={tempBrushType === 'highlighter'}
-                                onClick={() => setTempBrushType('highlighter')}
-                                style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
-                            >
-                                <HighlighterIcon />
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_highlighter || 'Highlight'}</span>
-                                <BrushSample
-                                    $type="highlighter"
-                                    $color={toolSettings['highlighter']?.color || color}
-                                    $size={(toolSettings['highlighter']?.size || brushSize) * 2}
-                                />
-                            </DashOption>
-                            <DashOption
-                                $active={tempBrushType === 'glow'}
-                                onClick={() => setTempBrushType('glow')}
-                                style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
-                            >
-                                <GlowIcon />
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_glow || 'Glow'}</span>
-                                <BrushSample
-                                    $type="glow"
-                                    $color={toolSettings['glow']?.color || color}
-                                    $size={toolSettings['glow']?.size || brushSize}
-                                />
-                            </DashOption>
-                            <DashOption
-                                $active={tempBrushType === 'spray'}
-                                onClick={() => setTempBrushType('spray')}
-                                style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
-                            >
-                                <SprayBrushIcon />
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_spray || 'Spray'}</span>
-                                <BrushSample
-                                    $type="spray"
-                                    $color={toolSettings['spray']?.color || color}
-                                    $size={toolSettings['spray']?.size || brushSize}
-                                />
-                            </DashOption>
-                            <DashOption
-                                $active={tempBrushType === 'circle'}
-                                onClick={() => setTempBrushType('circle')}
-                                style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
-                            >
-                                <CircleBrushIcon />
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_circle || 'Bubble'}</span>
-                                <BrushSample
-                                    $type="circle"
-                                    $color={toolSettings['circle']?.color || color}
-                                    $size={toolSettings['circle']?.size || brushSize}
-                                />
-                            </DashOption>
-
-                            <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
-
-                            <DashOption
-                                $active={tempPalmRejection}
-                                onClick={() => setTempPalmRejection(!tempPalmRejection)}
-                                style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
-                            >
-                                <div style={{
-                                    width: '18px',
-                                    height: '18px',
-                                    borderRadius: '4px',
-                                    border: '2px solid #333',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: tempPalmRejection ? '#333' : 'transparent'
-                                }}>
-                                    {tempPalmRejection && <div style={{ width: '8px', height: '8px', background: 'white', borderRadius: '1px' }} />}
+                            {activeTool === 'arrow' && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px', borderTop: '1px solid #eee' }}>
+                                    <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 600, minWidth: '35px' }}>
+                                        {t.drawing?.head_size || 'Head'}
+                                    </div>
+                                    <CustomRangeInput
+                                        type="range"
+                                        min="5"
+                                        max="100"
+                                        $size={6}
+                                        value={tempHeadSize}
+                                        onChange={(e) => setTempHeadSize(parseInt(e.target.value))}
+                                        style={{ margin: 0, flex: 1 }}
+                                    />
+                                    <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 500, minWidth: '30px', textAlign: 'right' }}>
+                                        {tempHeadSize}px
+                                    </div>
                                 </div>
-                                <span style={{ fontSize: '0.85rem' }}>{(t.drawing as any)?.palm_rejection || 'Palm Rejection'}</span>
-                            </DashOption>
-                        </div>
-                        <CompactModalFooter>
-                            <CompactModalButton onClick={handlePenReset}>
-                                {t.drawing?.reset || 'Reset'}
-                            </CompactModalButton>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <CompactModalButton onClick={handlePenCancel}>
-                                    {t.drawing?.cancel || 'Cancel'}
-                                </CompactModalButton>
-                                <CompactModalButton onClick={handlePenOk} $variant="primary">
-                                    {t.drawing?.ok || 'OK'}
-                                </CompactModalButton>
-                            </div>
-                        </CompactModalFooter>
-                    </CompactModal>
-                </Backdrop>
-            )}
+                            )}
 
-            {isFontEditOpen && (
-                <Backdrop
-                    $centered={!settingsAnchor}
-                    onClick={(e) => {
-                        const now = Date.now();
-                        if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
-                        if (e.target === e.currentTarget) handleFontOk();
-                    }}>
-                    <CompactModal
-                        $anchor={settingsAnchor || undefined}
-                        onClick={e => e.stopPropagation()}
-                        style={{ minWidth: '180px' }}
-                    >
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {INITIAL_FONTS.map((font) => (
+                            <CompactModalFooter>
+                                <CompactModalButton onClick={handleShapeSettingsReset}>
+                                    {t.drawing?.reset || 'Reset'}
+                                </CompactModalButton>
+                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                    <CompactModalButton onClick={handleShapeSettingsCancel}>
+                                        {t.drawing?.cancel || 'Cancel'}
+                                    </CompactModalButton>
+                                    <CompactModalButton onClick={handleShapeSettingsOk} $variant="primary">
+                                        {t.drawing?.ok || 'OK'}
+                                    </CompactModalButton>
+                                </div>
+                            </CompactModalFooter>
+                        </CompactModal>
+                    </Backdrop>
+                )}
+
+                {isPenEditOpen && (
+                    <Backdrop
+                        $centered={!settingsAnchor}
+                        onClick={(e) => {
+                            const now = Date.now();
+                            if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                            if (e.target === e.currentTarget) handlePenOk();
+                        }}>
+                        <CompactModal
+                            $anchor={settingsAnchor || undefined}
+                            onClick={e => e.stopPropagation()}
+                            style={{ minWidth: '240px' }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <DashOption
-                                    key={font}
-                                    $active={tempFontFamily === font}
-                                    onClick={() => setTempFontFamily(font)}
-                                    style={{ fontFamily: font, height: '32px', justifyContent: 'flex-start', padding: '0 12px' }}
+                                    $active={tempBrushType === 'pen'}
+                                    onClick={() => setTempBrushType('pen')}
+                                    style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
                                 >
-                                    {font}
+                                    <FiMinus size={18} />
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_pen || 'Pen'}</span>
+                                    <BrushSample
+                                        $type="pen"
+                                        $color={toolSettings['pen']?.color || color}
+                                        $size={toolSettings['pen']?.size || brushSize}
+                                    />
                                 </DashOption>
-                            ))}
-                        </div>
-                        <CompactModalFooter>
-                            <div />
-                            <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                <CompactModalButton onClick={handleFontCancel}>
-                                    {t.drawing?.cancel || 'Cancel'}
-                                </CompactModalButton>
-                                <CompactModalButton onClick={handleFontOk} $variant="primary">
-                                    {t.drawing?.ok || 'OK'}
-                                </CompactModalButton>
-                            </div>
-                        </CompactModalFooter>
-                    </CompactModal>
-                </Backdrop>
-            )}
+                                <DashOption
+                                    $active={tempBrushType === 'pencil'}
+                                    onClick={() => setTempBrushType('pencil')}
+                                    style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
+                                >
+                                    <FiEdit2 size={18} />
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_pencil || 'Pencil'}</span>
+                                    <BrushSample
+                                        $type="pencil"
+                                        $color={toolSettings['pencil']?.color || color}
+                                        $size={toolSettings['pencil']?.size || brushSize}
+                                    />
+                                </DashOption>
+                                <DashOption
+                                    $active={tempBrushType === 'highlighter'}
+                                    onClick={() => setTempBrushType('highlighter')}
+                                    style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
+                                >
+                                    <HighlighterIcon />
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_highlighter || 'Highlight'}</span>
+                                    <BrushSample
+                                        $type="highlighter"
+                                        $color={toolSettings['highlighter']?.color || color}
+                                        $size={(toolSettings['highlighter']?.size || brushSize) * 2}
+                                    />
+                                </DashOption>
+                                <DashOption
+                                    $active={tempBrushType === 'glow'}
+                                    onClick={() => setTempBrushType('glow')}
+                                    style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
+                                >
+                                    <GlowIcon />
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_glow || 'Glow'}</span>
+                                    <BrushSample
+                                        $type="glow"
+                                        $color={toolSettings['glow']?.color || color}
+                                        $size={toolSettings['glow']?.size || brushSize}
+                                    />
+                                </DashOption>
+                                <DashOption
+                                    $active={tempBrushType === 'spray'}
+                                    onClick={() => setTempBrushType('spray')}
+                                    style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
+                                >
+                                    <SprayBrushIcon />
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_spray || 'Spray'}</span>
+                                    <BrushSample
+                                        $type="spray"
+                                        $color={toolSettings['spray']?.color || color}
+                                        $size={toolSettings['spray']?.size || brushSize}
+                                    />
+                                </DashOption>
+                                <DashOption
+                                    $active={tempBrushType === 'circle'}
+                                    onClick={() => setTempBrushType('circle')}
+                                    style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
+                                >
+                                    <CircleBrushIcon />
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_circle || 'Bubble'}</span>
+                                    <BrushSample
+                                        $type="circle"
+                                        $color={toolSettings['circle']?.color || color}
+                                        $size={toolSettings['circle']?.size || brushSize}
+                                    />
+                                </DashOption>
 
-            <CanvasWrapper ref={containerRef}>
-                <canvas ref={canvasRef} />
-            </CanvasWrapper>
-        </ModalContainer>
-    </ModalOverlay >
-);
+                                <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
+
+                                <DashOption
+                                    $active={tempPalmRejection}
+                                    onClick={() => setTempPalmRejection(!tempPalmRejection)}
+                                    style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
+                                >
+                                    <div style={{
+                                        width: '18px',
+                                        height: '18px',
+                                        borderRadius: '4px',
+                                        border: '2px solid #333',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: tempPalmRejection ? '#333' : 'transparent'
+                                    }}>
+                                        {tempPalmRejection && <div style={{ width: '8px', height: '8px', background: 'white', borderRadius: '1px' }} />}
+                                    </div>
+                                    <span style={{ fontSize: '0.85rem' }}>{(t.drawing as any)?.palm_rejection || 'Palm Rejection'}</span>
+                                </DashOption>
+                            </div>
+                            <CompactModalFooter>
+                                <CompactModalButton onClick={handlePenReset}>
+                                    {t.drawing?.reset || 'Reset'}
+                                </CompactModalButton>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <CompactModalButton onClick={handlePenCancel}>
+                                        {t.drawing?.cancel || 'Cancel'}
+                                    </CompactModalButton>
+                                    <CompactModalButton onClick={handlePenOk} $variant="primary">
+                                        {t.drawing?.ok || 'OK'}
+                                    </CompactModalButton>
+                                </div>
+                            </CompactModalFooter>
+                        </CompactModal>
+                    </Backdrop>
+                )}
+
+                {isFontEditOpen && (
+                    <Backdrop
+                        $centered={!settingsAnchor}
+                        onClick={(e) => {
+                            const now = Date.now();
+                            if (now - openedTimeRef.current < 400) return; // Ignore ghost clicks
+                            if (e.target === e.currentTarget) handleFontOk();
+                        }}>
+                        <CompactModal
+                            $anchor={settingsAnchor || undefined}
+                            onClick={e => e.stopPropagation()}
+                            style={{ minWidth: '180px' }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {INITIAL_FONTS.map((font) => (
+                                    <DashOption
+                                        key={font}
+                                        $active={tempFontFamily === font}
+                                        onClick={() => setTempFontFamily(font)}
+                                        style={{ fontFamily: font, height: '32px', justifyContent: 'flex-start', padding: '0 12px' }}
+                                    >
+                                        {font}
+                                    </DashOption>
+                                ))}
+                            </div>
+                            <CompactModalFooter>
+                                <div />
+                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                    <CompactModalButton onClick={handleFontCancel}>
+                                        {t.drawing?.cancel || 'Cancel'}
+                                    </CompactModalButton>
+                                    <CompactModalButton onClick={handleFontOk} $variant="primary">
+                                        {t.drawing?.ok || 'OK'}
+                                    </CompactModalButton>
+                                </div>
+                            </CompactModalFooter>
+                        </CompactModal>
+                    </Backdrop>
+                )}
+
+                <CanvasWrapper ref={containerRef}>
+                    <canvas ref={canvasRef} />
+                </CanvasWrapper>
+            </ModalContainer>
+        </ModalOverlay >
+    );
 };
