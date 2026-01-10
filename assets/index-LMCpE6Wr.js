@@ -2248,22 +2248,22 @@ gl_FragColor.rgb *= color.a;
   justify-content: center;
 `,OI=Yt.div`
   background: white;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  min-width: 220px;
+  gap: 0.4rem;
+  min-width: 150px;
 `,MI=Yt.div`
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
   margin-top: 0.25rem;
 `,_1=Yt.button`
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid #dee2e6;
@@ -2288,7 +2288,7 @@ gl_FragColor.rgb *= color.a;
 `,Q3e=Yt.input`
   appearance: none;
   width: 100%;
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   cursor: pointer;
   background: transparent;
 
@@ -2332,8 +2332,8 @@ gl_FragColor.rgb *= color.a;
     outline: none;
   }
 `,J3e=Yt.input`
-  width: 70px;
-  padding: 0.35rem;
+  width: 50px;
+  padding: 0.2rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 0.9rem;
