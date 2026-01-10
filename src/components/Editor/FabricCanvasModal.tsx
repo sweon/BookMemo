@@ -1364,6 +1364,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                 new fabric.Point(0, 0)
             ], {
                 ...commonProps,
+                originX: 'center',
+                originY: 'center',
             });
         }
 
@@ -1440,22 +1442,23 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                 top
             });
         } else if (activeTool === 'diamond') {
+            const hw = width / 2;
+            const hh = height / 2;
             const points = [
-                new fabric.Point(width / 2, 0),        // Top
-                new fabric.Point(width, height / 2),   // Right
-                new fabric.Point(width / 2, height),   // Bottom
-                new fabric.Point(0, height / 2)        // Left
+                new fabric.Point(0, -hh), // Top
+                new fabric.Point(hw, 0),   // Right
+                new fabric.Point(0, hh),  // Bottom
+                new fabric.Point(-hw, 0)   // Left
             ];
 
             (shape as fabric.Polygon).set({
                 points,
-                left,
-                top,
+                left: left + hw,
+                top: top + hh,
                 width,
-                height
+                height,
+                pathOffset: new fabric.Point(0, 0)
             });
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (shape as any)._setPositionDimensions({});
         }
 
         shape.setCoords();
