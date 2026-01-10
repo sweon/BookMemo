@@ -117,21 +117,6 @@ const ModalContainer = styled.div`
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 `;
 
-const Header = styled.div`
-  padding: 0.5rem 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e0e0e0;
-  background: #f8f9fa;
-  color: #333;
-`;
-
-const Title = styled.h3`
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-`;
 
 const Toolbar = styled.div`
   display: flex;
@@ -205,25 +190,37 @@ const CanvasWrapper = styled.div`
   }
 `;
 
-const FooterButtons = styled.div`
+const FloatingActionButtons = styled.div`
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
 `;
 
-const ActionButton = styled.button<{ $primary?: boolean }>`
+const CompactActionButton = styled.button<{ $primary?: boolean }>`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  background: ${({ $primary }) => ($primary ? '#333' : 'transparent')};
-  color: ${({ $primary }) => ($primary ? 'white' : '#333')};
+  justify-content: center;
+  background: ${({ $primary }) => ($primary ? '#333' : '#ffffff')};
+  color: ${({ $primary }) => ($primary ? '#ffffff' : '#333')};
   border: 1px solid ${({ $primary }) => ($primary ? '#333' : '#ced4da')};
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
 
   &:hover {
-    opacity: 0.9;
+    transform: scale(1.05);
+    box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 `;
 
@@ -2188,18 +2185,6 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
             }
         }}>
             <ModalContainer>
-                <Header>
-                    <Title>{t.drawing?.title || 'Drawing'}</Title>
-                    <FooterButtons>
-                        <ActionButton onClick={onClose}>
-                            <FiX /> {t.drawing?.cancel || 'Cancel'}
-                        </ActionButton>
-                        <ActionButton $primary onClick={handleSave}>
-                            <FiCheck /> {t.drawing?.insert || 'Insert'}
-                        </ActionButton>
-                    </FooterButtons>
-                </Header>
-
                 <Toolbar>
                     <ToolGroup>
                         {toolbarItems.map((item, index) => renderToolbarItem(item, index))}
@@ -2553,6 +2538,14 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
                 <CanvasWrapper ref={containerRef}>
                     <canvas ref={canvasRef} />
+                    <FloatingActionButtons>
+                        <CompactActionButton onClick={onClose} title={t.drawing?.cancel || 'Cancel'}>
+                            <FiX size={24} />
+                        </CompactActionButton>
+                        <CompactActionButton $primary onClick={handleSave} title={t.drawing?.insert || 'Insert'}>
+                            <FiCheck size={24} />
+                        </CompactActionButton>
+                    </FloatingActionButtons>
                 </CanvasWrapper>
             </ModalContainer>
         </ModalOverlay >
