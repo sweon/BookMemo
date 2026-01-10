@@ -793,8 +793,11 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
             // 2. Check Touch Properties (Stylus specific)
             let isStylusTouch = false;
-            if (e.touches && e.touches.length > 0) {
-                const t = e.touches[0];
+            // Check both touches (active) and changedTouches (just ended)
+            const touchesToCheck = e.touches && e.touches.length > 0 ? e.touches : e.changedTouches;
+
+            if (touchesToCheck && touchesToCheck.length > 0) {
+                const t = touchesToCheck[0];
                 if ((t as any).touchType === 'stylus') isStylusTouch = true;
 
                 // Heuristic: Check for Pressure/Force or Tilt (Hardware features of S-Pen)
