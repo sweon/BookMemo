@@ -90,6 +90,20 @@ const VerticalExpandIcon = () => (
     </svg>
 );
 
+const PenIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 19l7-7 3 3-7 7-3-3z" />
+        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+        <path d="M2 2l5.5 5.5" />
+    </svg>
+);
+
+const PencilIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </svg>
+);
+
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -450,7 +464,7 @@ const getToolbarItemIcon = (item: ToolbarItem, colors: string[], brushSizes: num
     if (item.type === 'tool') {
         switch (item.toolId) {
             case 'select': return <FiMousePointer size={16} />;
-            case 'pen': return <FiEdit2 size={16} />;
+            case 'pen': return <PenIcon />;
             case 'line': return <FiMinus size={16} style={{ transform: 'rotate(-45deg)' }} />;
             case 'arrow': return <FiArrowDown size={16} style={{ transform: 'rotate(-135deg)' }} />;
             case 'rect': return <FiSquare size={16} />;
@@ -502,7 +516,8 @@ type ToolbarItem = {
 
 const INITIAL_TOOLBAR_ITEMS: ToolbarItem[] = [
     { id: 'select', type: 'tool', toolId: 'select' },
-    { id: 'pen', type: 'tool', toolId: 'pen' },
+    { id: 'pen_1', type: 'tool', toolId: 'pen' },
+    { id: 'pen_2', type: 'tool', toolId: 'pen' },
     { id: 'line', type: 'tool', toolId: 'line' },
     { id: 'arrow_v2', type: 'tool', toolId: 'arrow' },
     { id: 'rect', type: 'tool', toolId: 'rect' },
@@ -836,6 +851,20 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     const [tempSize, setTempSize] = useState(2);
     const [editingSizeIndex, setEditingSizeIndex] = useState<number | null>(null);
 
+    const [penSlotSettings, setPenSlotSettings] = useState<Record<string, { brushType: string, color: string, size: number }>>(() => {
+        const saved = localStorage.getItem('fabric_pen_slot_settings');
+        return saved ? JSON.parse(saved) : {
+            'pen_1': { brushType: 'pen', color: '#000000', size: 2 },
+            'pen_2': { brushType: 'highlighter', color: '#ffeb3b', size: 10 }
+        };
+    });
+    const [activePenSlot, setActivePenSlot] = useState<string>('pen_1');
+
+    // Save pen slot settings whenever they change
+    useEffect(() => {
+        localStorage.setItem('fabric_pen_slot_settings', JSON.stringify(penSlotSettings));
+    }, [penSlotSettings]);
+
     const [shapeStyles, setShapeStyles] = useState<Record<string, ShapeStyle>>(() => {
         const saved = localStorage.getItem('fabric_shape_styles');
         return saved ? JSON.parse(saved) : {};
@@ -944,8 +973,16 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
     }, [activeTool, brushType]);
 
     // Helper to update persistent settings
-    const updateToolSetting = React.useCallback((newColor?: string, newSize?: number) => {
-        const key = getToolKey(activeTool, brushType);
+    const updateToolSetting = React.useCallback((newColor?: string, newSize?: number, newType?: string) => {
+        // Update general state
+        if (newColor) setColor(newColor);
+        if (newSize) setBrushSize(newSize);
+        if (newType) setBrushType(newType as any);
+
+        const currentTool = activeTool;
+        const typeToUse = newType || brushType;
+        const key = getToolKey(currentTool, typeToUse);
+
         setToolSettings(prev => ({
             ...prev,
             [key]: {
@@ -953,7 +990,37 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                 size: newSize !== undefined ? newSize : (prev[key]?.size || brushSize)
             }
         }));
-    }, [activeTool, brushType, color, brushSize]);
+
+        // If currently using a pen slot, update its specific settings
+        if (currentTool === 'pen' && activePenSlot) {
+            setPenSlotSettings(prev => ({
+                ...prev,
+                [activePenSlot]: {
+                    brushType: typeToUse,
+                    color: newColor !== undefined ? newColor : (prev[activePenSlot]?.color || color),
+                    size: newSize !== undefined ? newSize : (prev[activePenSlot]?.size || brushSize)
+                }
+            }));
+        }
+    }, [activeTool, brushType, color, brushSize, activePenSlot, getToolKey]);
+
+    const handleToolSelect = React.useCallback((itemId: string, itemType: string, toolId?: ToolType) => {
+        if (itemType === 'tool' && toolId) {
+            if (toolId === 'pen') {
+                const slotId = (itemId === 'pen' || itemId === 'pen_1') ? 'pen_1' : (itemId === 'pen_2' ? 'pen_2' : 'pen_1');
+                setActivePenSlot(slotId);
+                const settings = penSlotSettings[slotId];
+                if (settings) {
+                    setBrushType(settings.brushType as any);
+                    setColor(settings.color);
+                    setBrushSize(settings.size);
+                }
+                setActiveTool('pen');
+            } else {
+                setActiveTool(toolId);
+            }
+        }
+    }, [penSlotSettings, setActivePenSlot, setBrushType, setColor, setBrushSize, setActiveTool]);
 
     // Shape drawing refs
     const isDrawingRef = useRef(false);
@@ -1276,18 +1343,20 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         setIsShapeSettingsOpen(false);
     };
 
-    const handlePenDoubleClick = (e: React.MouseEvent | React.TouchEvent) => {
+    const handlePenDoubleClick = (e: React.MouseEvent | React.TouchEvent, slotId?: string) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         setSettingsAnchor({
             top: rect.bottom + 5
         });
         setTempBrushType(brushType);
+        // Ensure we are tracking the correct slot for the modal context if it matters
+        // For now relying on activePenSlot since clicking activates it.
         openedTimeRef.current = Date.now();
         setIsPenEditOpen(true);
     };
 
     const handlePenOk = () => {
-        setBrushType(tempBrushType);
+        updateToolSetting(undefined, undefined, tempBrushType);
         setPalmRejection(tempPalmRejection);
         setSettingsAnchor(null);
         setIsPenEditOpen(false);
@@ -1340,8 +1409,12 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
             >
                 {item.type === 'tool' && (
                     <ToolButton
-                        $active={activeTool === item.toolId}
-                        onClick={() => setActiveTool(item.toolId!)}
+                        $active={
+                            item.toolId === 'pen'
+                                ? (activeTool === 'pen' && activePenSlot === (item.id === 'pen' ? 'pen_1' : item.id))
+                                : activeTool === item.toolId
+                        }
+                        onClick={() => handleToolSelect(item.id, item.type, item.toolId!)}
                         onDoubleClick={(e) => {
                             if (item.toolId === 'pen') {
                                 handlePenDoubleClick(e);
@@ -1362,18 +1435,37 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                         }}
                         title={(item.toolId ?? '').charAt(0).toUpperCase() + (item.toolId ?? '').slice(1)}
                     >
-                        {item.toolId === 'select' && <FiMousePointer size={16} />}
-                        {item.toolId === 'pen' && <FiEdit2 size={16} />}
-                        {item.toolId === 'line' && <FiMinus size={16} style={{ transform: 'rotate(-45deg)' }} />}
-                        {item.toolId === 'arrow' && <FiArrowDown size={16} style={{ transform: 'rotate(-135deg)' }} />}
-                        {item.toolId === 'rect' && <FiSquare size={16} />}
-                        {item.toolId === 'circle' && <FiCircle size={16} />}
-                        {item.toolId === 'ellipse' && <EllipseIcon />}
-                        {item.toolId === 'triangle' && <FiTriangle size={16} />}
-                        {item.toolId === 'diamond' && <DiamondIcon />}
-                        {item.toolId === 'text' && <FiType size={16} />}
-                        {item.toolId === 'eraser_pixel' && <PixelEraserIcon />}
-                        {item.toolId === 'eraser_object' && <ObjectEraserIcon />}
+                        {item.toolId === 'pen' ? (
+                            (() => {
+                                const slotId = (item.id === 'pen' || item.id === 'pen_1') ? 'pen_1' : (item.id === 'pen_2' ? 'pen_2' : 'pen_1');
+                                const settings = penSlotSettings[slotId];
+                                const typeToCheck = settings ? settings.brushType : 'pen';
+
+                                switch (typeToCheck) {
+                                    case 'pen': return <PenIcon />;
+                                    case 'pencil': return <PencilIcon />;
+                                    case 'highlighter': return <HighlighterIcon />;
+                                    case 'spray': return <SprayBrushIcon />;
+                                    case 'circle': return <CircleBrushIcon />;
+                                    case 'glow': return <GlowIcon />;
+                                    default: return <PenIcon />;
+                                }
+                            })()
+                        ) : (
+                            <>
+                                {item.toolId === 'select' && <FiMousePointer size={16} />}
+                                {item.toolId === 'line' && <FiMinus size={16} style={{ transform: 'rotate(-45deg)' }} />}
+                                {item.toolId === 'arrow' && <FiArrowDown size={16} style={{ transform: 'rotate(-135deg)' }} />}
+                                {item.toolId === 'rect' && <FiSquare size={16} />}
+                                {item.toolId === 'circle' && <FiCircle size={16} />}
+                                {item.toolId === 'ellipse' && <EllipseIcon />}
+                                {item.toolId === 'triangle' && <FiTriangle size={16} />}
+                                {item.toolId === 'diamond' && <DiamondIcon />}
+                                {item.toolId === 'text' && <FiType size={16} />}
+                                {item.toolId === 'eraser_pixel' && <PixelEraserIcon />}
+                                {item.toolId === 'eraser_object' && <ObjectEraserIcon />}
+                            </>
+                        )}
                     </ToolButton>
                 )}
 
@@ -2613,7 +2705,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                         onClick={() => setTempBrushType('pen')}
                                         style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
                                     >
-                                        <FiMinus size={18} />
+                                        <PenIcon />
                                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                         <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_pen || 'Pen'}</span>
                                         <BrushSample
@@ -2627,7 +2719,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                         onClick={() => setTempBrushType('pencil')}
                                         style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
                                     >
-                                        <FiEdit2 size={18} />
+                                        <PencilIcon />
                                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                         <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_pencil || 'Pencil'}</span>
                                         <BrushSample
@@ -2693,27 +2785,32 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                         />
                                     </DashOption>
 
-                                    <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
+                                    {activePenSlot === 'pen_1' && (
+                                        <>
+                                            <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }}></div>
 
-                                    <DashOption
-                                        $active={tempPalmRejection}
-                                        onClick={() => setTempPalmRejection(!tempPalmRejection)}
-                                        style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
-                                    >
-                                        <div style={{
-                                            width: '18px',
-                                            height: '18px',
-                                            borderRadius: '4px',
-                                            border: '2px solid #333',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            background: tempPalmRejection ? '#333' : 'transparent'
-                                        }}>
-                                            {tempPalmRejection && <div style={{ width: '8px', height: '8px', background: 'white', borderRadius: '1px' }} />}
-                                        </div>
-                                        <span style={{ fontSize: '0.85rem' }}>{(t.drawing as any)?.palm_rejection || 'Palm Rejection'}</span>
-                                    </DashOption>
+                                            <DashOption
+                                                $active={tempPalmRejection}
+                                                onClick={() => setTempPalmRejection(!tempPalmRejection)}
+                                                style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
+                                            >
+                                                <div style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    borderRadius: '4px',
+                                                    border: '2px solid #333',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    background: tempPalmRejection ? '#333' : 'transparent'
+                                                }}>
+                                                    {tempPalmRejection && <div style={{ width: '8px', height: '8px', background: 'white', borderRadius: '1px' }} />}
+                                                </div>
+                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                                <span style={{ fontSize: '0.85rem' }}>{(t.drawing as any)?.palm_rejection || 'Palm Rejection'}</span>
+                                            </DashOption>
+                                        </>
+                                    )}
                                 </div>
                                 <CompactModalFooter>
                                     <CompactModalButton onClick={handlePenReset}>
