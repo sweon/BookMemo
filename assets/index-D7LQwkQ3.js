@@ -2427,6 +2427,7 @@ gl_FragColor.rgb *= color.a;
   height: 32px;
   margin: 2px;
   cursor: grab;
+  color: #333; /* Ensure icon color is dark */
   /* Visual box removed for cleaner look on small screens */
 `,xR=Vt.div`
   background: ${({$isDraggingOver:e})=>e?"#f1f3f5":"#f8f9fa"};
