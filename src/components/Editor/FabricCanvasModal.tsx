@@ -101,12 +101,24 @@ const PenIcon = () => (
     </svg>
 );
 
-const PencilIcon = () => (
+const CarbonIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+        <path d="M18.3 3a2.5 2.5 0 0 1 2.8 3.8l-2.4 2.9a12 12 0 0 1-5 2.5l-6-5a12 12 0 0 1 2.5-5z" fill="currentColor" opacity="0.2" />
+        <path d="M12.5 7.5L5.5 14" strokeWidth="1.5" />
+        <path d="M16 4.5L8.5 11.5" strokeWidth="1.5" />
+        <path d="M13.7 12.2a12 12 0 0 1-5 2.5l-5 6 6-5a12 12 0 0 1 2.5-5" />
     </svg>
 );
-
+const HatchIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <line x1="7" y1="3" x2="3" y2="7" />
+        <line x1="14" y1="3" x2="3" y2="14" />
+        <line x1="21" y1="3" x2="3" y2="21" />
+        <line x1="21" y1="10" x2="10" y2="21" />
+        <line x1="21" y1="17" x2="17" y2="21" />
+    </svg>
+);
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -268,12 +280,11 @@ const BrushSample = styled.div<{ $type: string; $color: string; $size?: number }
             }
             return $color.replace('rgb', 'rgba').replace(')', ', 0.3)');
         }
-        if ($type === 'pencil') return `repeating-linear-gradient(45deg, ${$color}, ${$color} 1px, transparent 1px, transparent 3px)`;
-        if ($type === 'spray') return `radial-gradient(circle, ${$color} 20%, transparent 20%)`;
-        if ($type === 'circle') return `radial-gradient(circle, ${$color} 40%, transparent 45%, transparent 100%)`;
+        if ($type === 'carbon') return `radial-gradient(${$color}, transparent)`;
+        if ($type === 'hatch') return `repeating-linear-gradient(45deg, ${$color}, ${$color} 1px, transparent 1px, transparent 4px)`;
         return $color;
     }};
-  
+
   ${({ $type, $color }) => $type === 'glow' && `
     box-shadow: 0 0 8px ${$color};
     border: 1px solid white;
@@ -953,7 +964,7 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         localStorage.setItem('fabric_shape_styles', JSON.stringify(shapeStyles));
     }, [shapeStyles]);
 
-    const [brushType, setBrushType] = useState<'pencil' | 'pen' | 'highlighter' | 'glow' | 'spray' | 'circle'>(() => {
+    const [brushType, setBrushType] = useState<'pen' | 'highlighter' | 'glow' | 'spray' | 'circle' | 'carbon' | 'hatch'>(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (localStorage.getItem('fabric_brush_type') as any) || 'pen';
     });
@@ -1496,7 +1507,8 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
                                 switch (typeToCheck) {
                                     case 'pen': return <PenIcon />;
-                                    case 'pencil': return <PencilIcon />;
+                                    case 'carbon': return <CarbonIcon />;
+                                    case 'hatch': return <HatchIcon />;
                                     case 'highlighter': return <HighlighterIcon />;
                                     case 'spray': return <SprayBrushIcon />;
                                     case 'circle': return <CircleBrushIcon />;
@@ -2304,6 +2316,56 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (canvas.freeDrawingBrush as any).strokeLinecap = 'butt';
+                } else if (brushType === 'carbon') {
+                    // Charcoal/Carbon: Heavy noise
+                    const patternCanvas = document.createElement('canvas');
+                    const size = 32;
+                    patternCanvas.width = size;
+                    patternCanvas.height = size;
+                    const ctx = patternCanvas.getContext('2d');
+                    if (ctx) {
+                        const imgData = ctx.createImageData(size, size);
+                        const tc = new fabric.Color(color).getSource();
+                        if (tc) {
+                            for (let i = 0; i < imgData.data.length; i += 4) {
+                                // Dense noise cluster in middle, sparser at edges?
+                                // Just uniform high density noise for now
+                                if (Math.random() > 0.3) {
+                                    imgData.data[i] = tc[0];
+                                    imgData.data[i + 1] = tc[1];
+                                    imgData.data[i + 2] = tc[2];
+                                    imgData.data[i + 3] = Math.floor(Math.random() * 255);
+                                }
+                            }
+                        }
+                        ctx.putImageData(imgData, 0, 0);
+                    }
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    canvas.freeDrawingBrush = new (fabric as any).PatternBrush(canvas);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (canvas.freeDrawingBrush as any).source = patternCanvas;
+                } else if (brushType === 'hatch') {
+                    // Hatch: Criss Cross
+                    const patternCanvas = document.createElement('canvas');
+                    const size = 16;
+                    patternCanvas.width = size;
+                    patternCanvas.height = size;
+                    const ctx = patternCanvas.getContext('2d');
+                    if (ctx) {
+                        const tc = new fabric.Color(color).getSource();
+                        if (tc) {
+                            ctx.strokeStyle = `rgba(${tc[0]}, ${tc[1]}, ${tc[2]}, 1)`;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(0, 0); ctx.lineTo(size, size);
+                            ctx.moveTo(size, 0); ctx.lineTo(0, size);
+                            ctx.stroke();
+                        }
+                    }
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    canvas.freeDrawingBrush = new (fabric as any).PatternBrush(canvas);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (canvas.freeDrawingBrush as any).source = patternCanvas;
                 } else if (brushType === 'glow') {
                     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
                     canvas.freeDrawingBrush.shadow = new fabric.Shadow({
@@ -2758,12 +2820,16 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                             <CompactModal
                                 $anchor={settingsAnchor || undefined}
                                 onClick={e => e.stopPropagation()}
-                                style={{ minWidth: '240px' }}
+                                style={{ minWidth: '240px', maxHeight: '350px', overflowY: 'auto' }}
                             >
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     <DashOption
                                         $active={tempBrushType === 'pen'}
                                         onClick={() => setTempBrushType('pen')}
+                                        onDoubleClick={() => {
+                                            setTempBrushType('pen');
+                                            handlePenOk();
+                                        }}
                                         style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
                                     >
                                         <PenIcon />
@@ -2776,22 +2842,48 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                         />
                                     </DashOption>
                                     <DashOption
-                                        $active={tempBrushType === 'pencil'}
-                                        onClick={() => setTempBrushType('pencil')}
+                                        $active={tempBrushType === 'carbon'}
+                                        onClick={() => setTempBrushType('carbon')}
+                                        onDoubleClick={() => {
+                                            setTempBrushType('carbon');
+                                            handlePenOk();
+                                        }}
                                         style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
                                     >
-                                        <PencilIcon />
+                                        <CarbonIcon />
                                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                        <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_pencil || 'Pencil'}</span>
+                                        <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_carbon || 'Carbon'}</span>
                                         <BrushSample
-                                            $type="pencil"
-                                            $color={toolSettings['pencil']?.color || color}
-                                            $size={toolSettings['pencil']?.size || brushSize}
+                                            $type="carbon"
+                                            $color={toolSettings['carbon']?.color || color}
+                                            $size={toolSettings['carbon']?.size || brushSize}
+                                        />
+                                    </DashOption>
+                                    <DashOption
+                                        $active={tempBrushType === 'hatch'}
+                                        onClick={() => setTempBrushType('hatch')}
+                                        onDoubleClick={() => {
+                                            setTempBrushType('hatch');
+                                            handlePenOk();
+                                        }}
+                                        style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
+                                    >
+                                        <HatchIcon />
+                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                        <span style={{ fontSize: '0.85rem', minWidth: '70px' }}>{(t.drawing as any)?.pen_hatch || 'Hatch'}</span>
+                                        <BrushSample
+                                            $type="hatch"
+                                            $color={toolSettings['hatch']?.color || color}
+                                            $size={toolSettings['hatch']?.size || brushSize}
                                         />
                                     </DashOption>
                                     <DashOption
                                         $active={tempBrushType === 'highlighter'}
                                         onClick={() => setTempBrushType('highlighter')}
+                                        onDoubleClick={() => {
+                                            setTempBrushType('highlighter');
+                                            handlePenOk();
+                                        }}
                                         style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
                                     >
                                         <HighlighterIcon />
@@ -2806,6 +2898,10 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <DashOption
                                         $active={tempBrushType === 'glow'}
                                         onClick={() => setTempBrushType('glow')}
+                                        onDoubleClick={() => {
+                                            setTempBrushType('glow');
+                                            handlePenOk();
+                                        }}
                                         style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
                                     >
                                         <GlowIcon />
@@ -2820,6 +2916,10 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <DashOption
                                         $active={tempBrushType === 'spray'}
                                         onClick={() => setTempBrushType('spray')}
+                                        onDoubleClick={() => {
+                                            setTempBrushType('spray');
+                                            handlePenOk();
+                                        }}
                                         style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
                                     >
                                         <SprayBrushIcon />
@@ -2834,6 +2934,10 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                                     <DashOption
                                         $active={tempBrushType === 'circle'}
                                         onClick={() => setTempBrushType('circle')}
+                                        onDoubleClick={() => {
+                                            setTempBrushType('circle');
+                                            handlePenOk();
+                                        }}
                                         style={{ height: '36px', justifyContent: 'flex-start', padding: '0 12px', gap: '12px' }}
                                     >
                                         <CircleBrushIcon />
