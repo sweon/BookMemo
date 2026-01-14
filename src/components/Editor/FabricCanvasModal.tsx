@@ -654,6 +654,7 @@ const ConfigItem = styled.div`
   height: 32px;
   margin: 2px;
   cursor: grab;
+  color: #333; /* Ensure icon color is dark */
   /* Visual box removed for cleaner look on small screens */
 `;
 
