@@ -650,19 +650,11 @@ const ConfigItem = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  margin: 4px;
+  min-width: 32px;
+  height: 32px;
+  margin: 2px;
   cursor: grab;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-
-  &:hover {
-    border-color: #adb5bd;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
+  /* Visual box removed for cleaner look on small screens */
 `;
 
 const ConfigArea = styled.div<{ $isDraggingOver: boolean }>`
@@ -2577,16 +2569,17 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
             }}>
                 <ModalContainer>
                     <Toolbar>
-                        <ToolGroup>
+                        <ToolGroup style={{ flex: 1 }}>
                             {toolbarItems.map((item) => renderToolbarItem(item))}
+                            <div style={{ flex: 1 }} /> {/* Spacer to push settings button to right */}
+                            <ToolButton
+                                onClick={() => setIsConfigOpen(true)}
+                                style={{ border: 'none', background: 'transparent' }}
+                                title="Customize Toolbar"
+                            >
+                                <FiSettings size={18} />
+                            </ToolButton>
                         </ToolGroup>
-                        <ToolButton
-                            onClick={() => setIsConfigOpen(true)}
-                            style={{ marginLeft: 'auto', border: 'none', background: 'transparent' }}
-                            title="Customize Toolbar"
-                        >
-                            <FiSettings size={18} />
-                        </ToolButton>
                     </Toolbar>
                     {isColorEditOpen && (
                         <Backdrop
