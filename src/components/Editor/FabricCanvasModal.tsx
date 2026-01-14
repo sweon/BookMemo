@@ -2374,59 +2374,6 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                         offsetY: 0,
                         color: color
                     });
-                } else if (brushType === 'pencil') {
-                    // "True" Pencil Texture using sharp noise
-                    const patternCanvas = document.createElement('canvas');
-                    const patternSize = 64;
-                    patternCanvas.width = patternSize;
-                    patternCanvas.height = patternSize;
-                    const pCtx = patternCanvas.getContext('2d');
-
-                    if (pCtx) {
-                        // We need a sharp, grainy texture.
-                        // Instead of soft circles, we use 1px rectangles for distinct graphite particles.
-                        const imageData = pCtx.createImageData(patternSize, patternSize);
-                        const data = imageData.data;
-
-                        // Parse color to RGB
-                        let r = 0, g = 0, b = 0;
-                        if (color.startsWith('#')) {
-                            const hex = color.length === 4 ? color + color.slice(1) : color; // handle #000
-                            r = parseInt(hex.slice(1, 3), 16);
-                            g = parseInt(hex.slice(3, 5), 16);
-                            b = parseInt(hex.slice(5, 7), 16);
-                        } else if (color.startsWith('rgb')) {
-                            const rgb = color.match(/\d+/g);
-                            if (rgb) {
-                                r = parseInt(rgb[0]);
-                                g = parseInt(rgb[1]);
-                                b = parseInt(rgb[2]);
-                            }
-                        }
-
-                        // Fill with noise
-                        for (let i = 0; i < data.length; i += 4) {
-                            // Probability of a "graphite particle" hitting the paper grain
-                            // 30% chance of a mark, varying opacity for pressure simulation
-                            if (Math.random() < 0.25) {
-                                data[i] = r;     // R
-                                data[i + 1] = g; // G
-                                data[i + 2] = b; // B
-                                // Alpha: Random between 20 (faint) and 200 (dark), favoring lighter
-                                // This variation creates the "texture"
-                                data[i + 3] = Math.floor(Math.random() * 150) + 30;
-                            } else {
-                                data[i + 3] = 0; // Transparent
-                            }
-                        }
-
-                        pCtx.putImageData(imageData, 0, 0);
-                    }
-
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    canvas.freeDrawingBrush = new (fabric as any).PatternBrush(canvas);
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (canvas.freeDrawingBrush as any).source = patternCanvas;
                 } else if (brushType === 'pen') {
                     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
                 } else {
