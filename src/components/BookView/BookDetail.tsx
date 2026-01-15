@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { db } from '../../db';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FiEdit3, FiTrash2, FiRotateCcw, FiMaximize, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
@@ -18,13 +18,36 @@ import {
 
 
 const Container = styled.div`
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: ${({ theme }) => theme.colors.background};
+`;
+
+const LeftPane = styled.div<{ $isMemoOpen: boolean }>`
   flex: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
-  background: ${({ theme }) => theme.colors.background};
-  color: ${({ theme }) => theme.colors.text};
+  border-right: ${props => props.$isMemoOpen ? `1px solid ${props.theme.colors.border}` : 'none'};
+  transition: all 0.2s ease;
+  
+  @media (max-width: 1024px) {
+    display: ${props => props.$isMemoOpen ? 'none' : 'flex'};
+  }
+`;
+
+const RightPane = styled.div`
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  background: ${({ theme }) => theme.colors.surface};
+  
+  @media (max-width: 1024px) {
+    flex: 1;
+  }
 `;
 
 const Header = styled.div`
@@ -223,8 +246,9 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export const BookDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { bookId, id: memoId } = useParams<{ bookId: string; id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, language } = useLanguage();
 
   const [refAreaLeft, setRefAreaLeft] = React.useState<any>(null);
@@ -234,14 +258,18 @@ export const BookDetail: React.FC = () => {
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
   const lastMouseIndex = React.useRef<number | null>(null);
 
-  const book = useLiveQuery(() => db.books.get(Number(id)), [id]);
+  const numericBookId = Number(bookId);
+  const book = useLiveQuery(() => isNaN(numericBookId) ? undefined : db.books.get(numericBookId), [numericBookId]);
   const memos = useLiveQuery(() =>
-    db.memos
-      .where('bookId')
-      .equals(Number(id))
-      .reverse()
-      .sortBy('createdAt')
-    , [id]);
+    isNaN(numericBookId) ? Promise.resolve([] as any[]) :
+      db.memos
+        .where('bookId')
+        .equals(numericBookId)
+        .reverse()
+        .sortBy('createdAt')
+    , [numericBookId]) || [];
+
+  if (isNaN(numericBookId)) return null;
 
   // Filter out progress-only memos for the list view
   const displayMemos = useMemo(() => {
@@ -410,7 +438,10 @@ export const BookDetail: React.FC = () => {
     if (data.id) {
       // If it's just progress, go to edit mode directly so they can "add" a memo to it.
       const query = data.type === 'progress' ? '?edit=true' : '';
-      navigate(`/memo/${data.id}${query}`);
+      navigate(`/book/${bookId}/memo/${data.id}${query}`, {
+        replace: !!memoId,
+        state: { isGuard: true }
+      });
     }
   };
 
@@ -478,241 +509,253 @@ export const BookDetail: React.FC = () => {
     }
   };
 
+  const isMemoOpen = !!memoId || location.pathname === `/book/${bookId}/new` || location.pathname === `/book/${bookId}/edit`;
+
   return (
-    <Container>
-      <Header>
-        <BookTitle>{book.title}</BookTitle>
-        {book.author && book.author.trim() !== '' && (
-          <MetaInfo>
-            <span>{book.author}</span>
-          </MetaInfo>
-        )}
+    <Container shadow-root="false">
+      <LeftPane $isMemoOpen={isMemoOpen}>
+        <Header>
+          <BookTitle>{book.title}</BookTitle>
+          {book.author && book.author.trim() !== '' && (
+            <MetaInfo>
+              <span>{book.author}</span>
+            </MetaInfo>
+          )}
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
-          <ActionButton onClick={() => navigate(`/book/${book.id}/new`)}>
-            <FiEdit3 /> {t.book_detail.write_memo}
-          </ActionButton>
-          <ActionButton style={{ background: '#64748b' }} onClick={() => navigate(`/book/${book.id}/edit`)}>
-            <FiEdit3 /> {t.book_detail.edit_book}
-          </ActionButton>
-          <ActionButton style={{ background: '#ef4444' }} onClick={handleDelete}>
-            <FiTrash2 /> {t.book_detail.delete_book}
-          </ActionButton>
-        </div>
-
-        <ProgressSection>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
-            <span>{t.book_detail.progress}</span>
-            <span style={{ color: progressPercent === 100 ? '#22c55e' : 'inherit', fontWeight: progressPercent === 100 ? '600' : '400' }}>
-              {book.currentPage || 0} / {book.totalPages} pages ({progressPercent}%)
-            </span>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+            <ActionButton onClick={() => navigate(`/book/${book.id}/new`, { state: { isGuard: true } })}>
+              <FiEdit3 /> {t.book_detail.write_memo}
+            </ActionButton>
+            <ActionButton style={{ background: '#64748b' }} onClick={() => navigate(`/book/${book.id}/edit`, { state: { isGuard: true } })}>
+              <FiEdit3 /> {t.book_detail.edit_book}
+            </ActionButton>
+            <ActionButton style={{ background: '#ef4444' }} onClick={handleDelete}>
+              <FiTrash2 /> {t.book_detail.delete_book}
+            </ActionButton>
           </div>
-          <ProgressBar $percent={progressPercent} />
-        </ProgressSection>
 
-        {allChartData.length > 0 && (
-          <GraphContainer>
-            {zoomDomain && (
-              <div style={{
-                position: 'absolute',
-                bottom: '10px',
-                right: '25px',
-                display: 'flex',
-                gap: '6px',
-                zIndex: 10
-              }}>
-                <MiniPillButton onClick={() => scrollChart('left')}>
-                  <FiChevronLeft size={11} />
-                </MiniPillButton>
-                <MiniPillButton onClick={() => scrollChart('right')} style={{ marginRight: '8px' }}>
-                  <FiChevronRight size={11} />
-                </MiniPillButton>
-                <MiniPillButton onClick={zoomBack}>
-                  <FiRotateCcw size={11} /> {t.book_detail.zoom_back}
-                </MiniPillButton>
-                <MiniPillButton onClick={resetZoom}>
-                  <FiMaximize size={11} /> {t.book_detail.reset_zoom}
-                </MiniPillButton>
-              </div>
-            )}
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                margin={window.innerWidth <= 768
-                  ? { top: 10, right: 5, bottom: 40, left: -25 }
-                  : { top: 20, right: 20, bottom: 60, left: 0 }
-                }
-                data={allChartData}
-                {...({ activeTooltipIndex: focusedIndex ?? undefined } as any)}
-                onMouseDown={(e) => e && setRefAreaLeft(e.activeLabel)}
-                onMouseMove={(e) => {
-                  if (refAreaLeft) setRefAreaRight(e?.activeLabel);
-                  if (e && e.activeTooltipIndex !== undefined) {
-                    const newIndex = e.activeTooltipIndex as number;
-                    if (newIndex !== lastMouseIndex.current) {
-                      setFocusedIndex(newIndex);
-                      lastMouseIndex.current = newIndex;
-                    }
+          <ProgressSection>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
+              <span>{t.book_detail.progress}</span>
+              <span style={{ color: progressPercent === 100 ? '#22c55e' : 'inherit', fontWeight: progressPercent === 100 ? '600' : '400' }}>
+                {book.currentPage || 0} / {book.totalPages} pages ({progressPercent}%)
+              </span>
+            </div>
+            <ProgressBar $percent={progressPercent} />
+          </ProgressSection>
+
+          {allChartData.length > 0 && (
+            <GraphContainer>
+              {zoomDomain && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '10px',
+                  right: '25px',
+                  display: 'flex',
+                  gap: '6px',
+                  zIndex: 10
+                }}>
+                  <MiniPillButton onClick={() => scrollChart('left')}>
+                    <FiChevronLeft size={11} />
+                  </MiniPillButton>
+                  <MiniPillButton onClick={() => scrollChart('right')} style={{ marginRight: '8px' }}>
+                    <FiChevronRight size={11} />
+                  </MiniPillButton>
+                  <MiniPillButton onClick={zoomBack}>
+                    <FiRotateCcw size={11} /> {t.book_detail.zoom_back}
+                  </MiniPillButton>
+                  <MiniPillButton onClick={resetZoom}>
+                    <FiMaximize size={11} /> {t.book_detail.reset_zoom}
+                  </MiniPillButton>
+                </div>
+              )}
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  margin={window.innerWidth <= 768
+                    ? { top: 10, right: 5, bottom: 40, left: -25 }
+                    : { top: 20, right: 20, bottom: 60, left: 0 }
                   }
-                }}
-                onMouseLeave={() => {
-                  setFocusedIndex(null);
-                  lastMouseIndex.current = null;
-                }}
-                onMouseUp={handleZoom}
-                style={{ cursor: 'crosshair' }}
-              >
-                <XAxis
-                  type="number"
-                  dataKey="x"
-                  name="Date"
-                  domain={zoomDomain || [book.startDate.getTime(), 'dataMax']}
-                  allowDataOverflow={true}
-                  tickFormatter={(timestamp) => format(new Date(timestamp), language === 'ko' ? 'yy.M.d' : 'yy/M/d')}
-                  tick={{ fontSize: 11, fill: '#888' }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis
-                  type="number"
-                  dataKey={(payload) => payload.yMain ?? payload.yBacktrack ?? 0}
-                  name="Page"
-                  domain={[0, book.totalPages]}
-                  tick={{ fontSize: 12, fill: '#888' }}
-                />
-
-
-                {!refAreaLeft && (
-                  <Tooltip
-                    content={<CustomTooltip />}
-                    cursor={{ strokeDasharray: '3 3' }}
-                    offset={50}
-                    active={focusedIndex !== null}
-                  />
-                )}
-
-                {/* Main progress line */}
-                <Line
-                  type="monotone"
-                  dataKey="yMain"
-                  connectNulls={true}
-                  stroke="#64748b"
-                  strokeWidth={2}
-                  dot={(props: any) => {
-                    const { cx, cy, payload, index } = props;
-                    if (payload.yMain === null) return null;
-
-                    if (payload.type === 'start') {
-                      return <circle cx={cx} cy={cy} r={4} fill="#94a3b8" />;
+                  data={allChartData}
+                  {...({ activeTooltipIndex: focusedIndex ?? undefined } as any)}
+                  onMouseDown={(e) => e && setRefAreaLeft(e.activeLabel)}
+                  onMouseMove={(e) => {
+                    if (refAreaLeft) setRefAreaRight(e?.activeLabel);
+                    if (e && e.activeTooltipIndex !== undefined) {
+                      const newIndex = e.activeTooltipIndex as number;
+                      if (newIndex !== lastMouseIndex.current) {
+                        setFocusedIndex(newIndex);
+                        lastMouseIndex.current = newIndex;
+                      }
                     }
-                    const isProgress = payload.type === 'progress';
-                    const isFocused = focusedIndex === index;
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={isFocused ? 8 : 5}
-                        fill={isProgress ? '#22c55e' : '#2563eb'}
-                        stroke={isFocused ? '#fff' : 'none'}
-                        strokeWidth={isFocused ? 2 : 0}
-                        style={{ cursor: isProgress ? 'default' : 'pointer', zIndex: isFocused ? 20 : 1 }}
-                        onClick={() => handlePointClick(payload, index)}
-                      />
-                    );
                   }}
-                  activeDot={(props: any) => {
-                    const { cx, cy, payload, index } = props;
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={7}
-                        fill={payload.type === 'progress' ? '#22c55e' : '#1d4ed8'}
-                        stroke="#fff"
-                        strokeWidth={2}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => handlePointClick(payload, index)}
-                      />
-                    );
+                  onMouseLeave={() => {
+                    setFocusedIndex(null);
+                    lastMouseIndex.current = null;
                   }}
-                />
-
-                {/* Backtrack dots - memos at earlier pages */}
-                <Line
-                  type="monotone"
-                  dataKey="yBacktrack"
-                  stroke="none"
-                  dot={(props: any) => {
-                    const { cx, cy, payload, index } = props;
-                    if (payload.yBacktrack === null) return null;
-                    const isFocused = focusedIndex === index;
-                    // Distinguish no-page memos (y=0) from actual backtrack memos
-                    const isNoPage = payload.y === 0;
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={isFocused ? 8 : 5}
-                        fill={isNoPage ? '#8b5cf6' : '#f59e0b'}
-                        stroke={isFocused ? '#fff' : 'none'}
-                        strokeWidth={isFocused ? 2 : 0}
-                        style={{ cursor: 'pointer', zIndex: isFocused ? 20 : 1 }}
-                        onClick={() => handlePointClick(payload, index)}
-                      />
-                    );
-                  }}
-                  activeDot={(props: any) => {
-                    const { cx, cy, payload, index } = props;
-                    const isFocused = focusedIndex === index;
-                    const isNoPage = payload.y === 0;
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={isFocused ? 8 : 7}
-                        fill={isNoPage ? '#8b5cf6' : '#f59e0b'}
-                        stroke="#fff"
-                        strokeWidth={2}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => handlePointClick(payload, index)}
-                      />
-                    );
-                  }}
-                />
-                {refAreaLeft && refAreaRight && (
-                  <ReferenceArea
-                    x1={refAreaLeft}
-                    x2={refAreaRight}
-                    strokeOpacity={0.3}
-                    fill="#3b82f6"
-                    fillOpacity={0.1}
+                  onMouseUp={handleZoom}
+                  style={{ cursor: 'crosshair' }}
+                >
+                  <XAxis
+                    type="number"
+                    dataKey="x"
+                    name="Date"
+                    domain={zoomDomain || [book.startDate.getTime(), 'dataMax']}
+                    allowDataOverflow={true}
+                    tickFormatter={(timestamp) => format(new Date(timestamp), language === 'ko' ? 'yy.M.d' : 'yy/M/d')}
+                    tick={{ fontSize: 11, fill: '#888' }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
                   />
-                )}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </GraphContainer>
-        )}
-      </Header>
+                  <YAxis
+                    type="number"
+                    dataKey={(payload) => payload.yMain ?? payload.yBacktrack ?? 0}
+                    name="Page"
+                    domain={[0, book.totalPages]}
+                    tick={{ fontSize: 12, fill: '#888' }}
+                  />
 
-      <MemoListSection>
-        {displayMemos && displayMemos.map(memo => (
-          <MemoCard key={memo.id} onClick={() => navigate(`/memo/${memo.id}`)}>
-            <PageMeta>
-              <span>{memo.pageNumber ? `${t.book_detail.page} ${memo.pageNumber}` : t.book_detail.whole_book}</span>
-              <span>{format(memo.createdAt, language === 'ko' ? 'M월 d일 HH:mm' : 'MMM d, HH:mm')}</span>
-            </PageMeta>
-            {memo.quote && <Quote>“{memo.quote}”</Quote>}
-            <MemoContent>{memo.title}</MemoContent>
-          </MemoCard>
-        ))}
 
-        {(!displayMemos || displayMemos.length === 0) && (
-          <div style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>
-            {t.book_detail.start_reading}
-          </div>
-        )}
-      </MemoListSection>
+                  {!refAreaLeft && (
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{ strokeDasharray: '3 3' }}
+                      offset={50}
+                      active={focusedIndex !== null}
+                    />
+                  )}
 
-    </Container >
+                  {/* Main progress line */}
+                  <Line
+                    type="monotone"
+                    dataKey="yMain"
+                    connectNulls={true}
+                    stroke="#64748b"
+                    strokeWidth={2}
+                    dot={(props: any) => {
+                      const { cx, cy, payload, index } = props;
+                      if (payload.yMain === null) return null;
+
+                      if (payload.type === 'start') {
+                        return <circle cx={cx} cy={cy} r={4} fill="#94a3b8" />;
+                      }
+                      const isProgress = payload.type === 'progress';
+                      const isFocused = focusedIndex === index;
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={isFocused ? 8 : 5}
+                          fill={isProgress ? '#22c55e' : '#2563eb'}
+                          stroke={isFocused ? '#fff' : 'none'}
+                          strokeWidth={isFocused ? 2 : 0}
+                          style={{ cursor: isProgress ? 'default' : 'pointer', zIndex: isFocused ? 20 : 1 }}
+                          onClick={() => handlePointClick(payload, index)}
+                        />
+                      );
+                    }}
+                    activeDot={(props: any) => {
+                      const { cx, cy, payload, index } = props;
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={7}
+                          fill={payload.type === 'progress' ? '#22c55e' : '#1d4ed8'}
+                          stroke="#fff"
+                          strokeWidth={2}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => handlePointClick(payload, index)}
+                        />
+                      );
+                    }}
+                  />
+
+                  {/* Backtrack dots - memos at earlier pages */}
+                  <Line
+                    type="monotone"
+                    dataKey="yBacktrack"
+                    stroke="none"
+                    dot={(props: any) => {
+                      const { cx, cy, payload, index } = props;
+                      if (payload.yBacktrack === null) return null;
+                      const isFocused = focusedIndex === index;
+                      // Distinguish no-page memos (y=0) from actual backtrack memos
+                      const isNoPage = payload.y === 0;
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={isFocused ? 8 : 5}
+                          fill={isNoPage ? '#8b5cf6' : '#f59e0b'}
+                          stroke={isFocused ? '#fff' : 'none'}
+                          strokeWidth={isFocused ? 2 : 0}
+                          style={{ cursor: 'pointer', zIndex: isFocused ? 20 : 1 }}
+                          onClick={() => handlePointClick(payload, index)}
+                        />
+                      );
+                    }}
+                    activeDot={(props: any) => {
+                      const { cx, cy, payload, index } = props;
+                      const isFocused = focusedIndex === index;
+                      const isNoPage = payload.y === 0;
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={isFocused ? 8 : 7}
+                          fill={isNoPage ? '#8b5cf6' : '#f59e0b'}
+                          stroke="#fff"
+                          strokeWidth={2}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => handlePointClick(payload, index)}
+                        />
+                      );
+                    }}
+                  />
+                  {refAreaLeft && refAreaRight && (
+                    <ReferenceArea
+                      x1={refAreaLeft}
+                      x2={refAreaRight}
+                      strokeOpacity={0.3}
+                      fill="#3b82f6"
+                      fillOpacity={0.1}
+                    />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </GraphContainer>
+          )}
+        </Header>
+
+        <MemoListSection>
+          {displayMemos && displayMemos.map(memo => (
+            <MemoCard key={memo.id} onClick={() => navigate(`/book/${bookId}/memo/${memo.id}`, {
+              replace: !!memoId,
+              state: { isGuard: true }
+            })}>
+              <PageMeta>
+                <span>{memo.pageNumber ? `${t.book_detail.page} ${memo.pageNumber}` : t.book_detail.whole_book}</span>
+                <span>{format(memo.createdAt, language === 'ko' ? 'M월 d일 HH:mm' : 'MMM d, HH:mm')}</span>
+              </PageMeta>
+              {memo.quote && <Quote>“{memo.quote}”</Quote>}
+              <MemoContent>{memo.title}</MemoContent>
+            </MemoCard>
+          ))}
+
+          {(!displayMemos || displayMemos.length === 0) && (
+            <div style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>
+              {t.book_detail.start_reading}
+            </div>
+          )}
+        </MemoListSection>
+      </LeftPane>
+
+      {isMemoOpen && (
+        <RightPane>
+          <Outlet />
+        </RightPane>
+      )}
+    </Container>
   );
 };

@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { CommentsSection } from './CommentsSection';
 import { ShareModal } from '../Sync/ShareModal';
 import { DeleteChoiceModal } from './DeleteChoiceModal';
+import { FabricCanvasModal } from '../Editor/FabricCanvasModal';
 
 const Container = styled.div`
   display: flex;
@@ -235,6 +236,7 @@ export const MemoDetail: React.FC = () => {
 
     const isEditing = isEditingInternal;
     const setIsEditing = (val: boolean) => {
+        if (val === isEditingInternal) return; // Do nothing if state matches
         if (val) startEditing();
         else stopEditing();
     };
@@ -252,6 +254,10 @@ export const MemoDetail: React.FC = () => {
 
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isFabricModalOpen, setIsFabricModalOpen] = useState(false);
+
+    // Check if this memo is a drawing
+    const isDrawingMemo = content.trim().startsWith('```fabric');
 
     const memo = useLiveQuery(
         () => (id ? db.memos.get(Number(id)) : undefined),
@@ -409,7 +415,7 @@ export const MemoDetail: React.FC = () => {
             });
 
             if (searchParams.get('edit')) {
-                navigate(`/memo/${id}`, { replace: true });
+                navigate(`/book/${targetBookId}/memo/${id}`, { replace: true });
             }
             setIsEditing(false);
         } else {
@@ -426,7 +432,7 @@ export const MemoDetail: React.FC = () => {
                 type: finalType
             });
 
-            navigate(`/memo/${newId}`);
+            navigate(`/book/${targetBookId}/memo/${newId}`);
         }
     };
 
@@ -622,7 +628,19 @@ export const MemoDetail: React.FC = () => {
                 <MarkdownEditor value={content} onChange={setContent} />
             ) : (
                 <>
-                    <MarkdownView content={content} />
+                    {isDrawingMemo ? (
+                        <div
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => setIsFabricModalOpen(true)}
+                        >
+                            <MarkdownView content={content} />
+                            <p style={{ textAlign: 'center', color: '#666', fontSize: '0.85rem', marginTop: '-0.5rem' }}>
+                                {language === 'ko' ? '클릭하여 편집' : 'Click to edit'}
+                            </p>
+                        </div>
+                    ) : (
+                        <MarkdownView content={content} />
+                    )}
                     {!isNew && memo && <CommentsSection memoId={memo.id!} />}
                 </>
             )}
@@ -652,6 +670,30 @@ export const MemoDetail: React.FC = () => {
                     icon={<FiAlertTriangle size={14} />}
                     message={t.android?.exit_warning || "Press back again to exit editing."}
                     onClose={() => setShowExitToast(false)}
+                />
+            )}
+
+            {isFabricModalOpen && (
+                <FabricCanvasModal
+                    initialData={(() => {
+                        const match = content.match(/```fabric\s*([\s\S]*?)\s*```/);
+                        return match ? match[1] : undefined;
+                    })()}
+                    onSave={async (json) => {
+                        const newContent = `\`\`\`fabric\n${json}\n\`\`\``;
+                        setContent(newContent);
+
+                        // Auto-save if viewing existing memo
+                        if (id && memo) {
+                            await db.memos.update(Number(id), {
+                                content: newContent,
+                                updatedAt: new Date()
+                            });
+                        }
+
+                        setIsFabricModalOpen(false);
+                    }}
+                    onClose={() => setIsFabricModalOpen(false)}
                 />
             )}
         </Container>

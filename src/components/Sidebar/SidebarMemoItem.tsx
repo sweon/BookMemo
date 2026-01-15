@@ -7,7 +7,7 @@ interface Props {
     memo: Memo;
     index: number;
     isActive: boolean;
-    onClick?: () => void;
+    onClick?: (skipHistory?: boolean) => void;
     formatDate: (date: Date) => string;
     inThread?: boolean;
     untitledText: string;
@@ -44,10 +44,10 @@ export const SidebarMemoItem: React.FC<Props> = ({
                     }}
                 >
                     <MemoItemLink
-                        to={`/memo/${memo.id}`}
+                        to={`/book/${memo.bookId}/memo/${memo.id}`}
                         $isActive={isActive}
                         $inThread={inThread}
-                        onClick={onClick}
+                        onClick={() => onClick?.(true)}
                     >
                         <MemoTitle title={memo.title || untitledText}>
                             {memo.title || untitledText}

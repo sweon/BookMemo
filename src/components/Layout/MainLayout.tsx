@@ -198,15 +198,15 @@ export const MainLayout: React.FC = () => {
   }, [isResizing, handleMouseMove, handleTouchMove, stopResizing]);
 
   // Handle sidebar toggle with history on mobile
-  const toggleSidebar = useCallback((open: boolean) => {
+  const toggleSidebar = useCallback((open: boolean, skipHistory = false) => {
     setSidebarOpen(open);
     if (isMobile) {
       if (open) {
-        // Push a state when opening so back button can close it
-        window.history.pushState({ sidebar: true, isGuard: true }, '');
-      } else {
-        // If closing manually and we have the sidebar state, go back
-        if (window.history.state?.sidebar) {
+        if (!window.history.state?.sidebarOpen) {
+          window.history.pushState({ sidebarOpen: true, isGuard: true }, '');
+        }
+      } else if (!skipHistory) {
+        if (window.history.state?.sidebarOpen) {
           window.history.back();
         }
       }
@@ -215,15 +215,13 @@ export const MainLayout: React.FC = () => {
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
-      // If we are on mobile, sidebar is open, but the new state doesn't have it
-      // then close the sidebar.
-      if (isMobile && isSidebarOpen && !e.state?.sidebar) {
-        setSidebarOpen(false);
+      if (isMobile) {
+        setSidebarOpen(!!e.state?.sidebarOpen);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [isMobile, isSidebarOpen]);
+  }, [isMobile]);
 
   // Resize handle is visible:
   // - Desktop: always visible
@@ -234,7 +232,7 @@ export const MainLayout: React.FC = () => {
     <Container ref={containerRef} $isResizing={isResizing}>
       <Overlay $isOpen={isSidebarOpen} onClick={() => toggleSidebar(false)} />
       <SidebarWrapper $isOpen={isSidebarOpen} $width={sidebarWidth}>
-        <Sidebar onCloseMobile={() => toggleSidebar(false)} />
+        <Sidebar onCloseMobile={(skip) => toggleSidebar(false, skip)} />
         <ResizeHandle
           $isResizing={isResizing}
           $isVisible={isResizeHandleVisible}

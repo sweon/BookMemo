@@ -14,7 +14,7 @@ interface Props {
     activeMemoId?: number;
     formatDate: (d: Date) => string;
     untitledText: string;
-    onMemoClick?: () => void;
+    onMemoClick?: (skipHistory?: boolean) => void;
     isCombineTarget?: boolean;
     t: TranslationKeys;
 }
@@ -46,10 +46,10 @@ export const SidebarThreadItem: React.FC<Props> = ({
                     {/* Head Memo - Acts as drag handle for the group */}
                     <div {...provided.dragHandleProps} style={{ position: 'relative' }}>
                         <MemoItemLink
-                            to={`/memo/${headMemo.id}`}
+                            to={`/book/${headMemo.bookId}/memo/${headMemo.id}`}
                             $isActive={activeMemoId === headMemo.id}
                             $inThread={false}
-                            onClick={onMemoClick}
+                            onClick={() => onMemoClick?.(true)}
                         >
                             <MemoTitle title={headMemo.title || untitledText}>
                                 {headMemo.title || untitledText}

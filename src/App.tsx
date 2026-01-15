@@ -24,10 +24,11 @@ function App() {
                 <Route path="/" element={<MainLayout />}>
                   <Route index element={<EmptyState />} />
                   <Route path="book/new" element={<AddBookPage />} />
-                  <Route path="book/:id/edit" element={<EditBookPage />} />
-                  <Route path="book/:id" element={<BookDetail />} />
-                  <Route path="book/:bookId/new" element={<MemoDetail />} />
-                  <Route path="memo/:id" element={<MemoDetail />} />
+                  <Route path="book/:bookId" element={<BookDetail />}>
+                    <Route path="edit" element={<EditBookPage />} />
+                    <Route path="memo/:id" element={<MemoDetail />} />
+                    <Route path="new" element={<MemoDetail />} />
+                  </Route>
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>

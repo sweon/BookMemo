@@ -166,11 +166,11 @@ const formatDateForInput = (date: Date) => {
 };
 
 export const EditBookPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { bookId } = useParams<{ bookId: string }>();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
-  const book = useLiveQuery(() => db.books.get(Number(id)), [id]);
+  const book = useLiveQuery(() => db.books.get(Number(bookId)), [bookId]);
 
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -222,7 +222,7 @@ export const EditBookPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(`/book/${id}`);
+    navigate(`/book/${bookId}`);
   };
 
   if (!book) {

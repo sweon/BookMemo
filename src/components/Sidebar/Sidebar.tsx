@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiMinus, FiSettings, FiSun, FiMoon, FiSearch, FiX, FiRefreshCw, FiArrowUpCircle } from 'react-icons/fi';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Tooltip } from '../UI/Tooltip';
@@ -203,7 +203,7 @@ const IconButton = styled.button`
 `;
 
 interface SidebarProps {
-  onCloseMobile: () => void;
+  onCloseMobile: (skipHistory?: boolean) => void;
 }
 
 const BrandHeader = styled.div`
@@ -235,7 +235,6 @@ const AppVersion = styled.span`
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const { searchQuery, setSearchQuery } = useSearch();
   const { t, language } = useLanguage();
-  const location = useLocation();
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'last-memo-desc' | 'last-comment-desc'>('date-desc');
 
 
@@ -408,8 +407,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       <Header>
         <TopActions>
           <Button onClick={() => {
-            navigate('/book/new');
-            onCloseMobile();
+            handleSafeNavigation(() => {
+              navigate('/book/new', { replace: true, state: { isGuard: true } });
+              onCloseMobile(true);
+            });
           }}>
             <FiPlus />
             <span className="add-book-text">{t.sidebar.add_book || "New Book"}</span>
@@ -434,7 +435,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             <Tooltip content={t.sidebar.sync_data}>
               <IconButton onClick={() => {
                 setIsSyncModalOpen(true);
-                onCloseMobile();
+                onCloseMobile(true);
               }}>
                 <FiRefreshCw size={18} />
               </IconButton>
@@ -470,9 +471,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             <Tooltip content={t.sidebar.settings}>
               <IconButton onClick={() => {
                 handleSafeNavigation(() => {
-                  const isAtRoot = location.pathname === '/' || location.pathname === '';
-                  navigate('/settings', { replace: !isAtRoot });
-                  onCloseMobile();
+                  navigate('/settings', { replace: true, state: { isGuard: true } });
+                  onCloseMobile(true);
                 });
               }}>
                 <FiSettings size={18} />

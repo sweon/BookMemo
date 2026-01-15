@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useParams, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import type { Book, Memo } from '../../db';
 
@@ -77,20 +77,18 @@ const ThreadList = styled.div`
 interface Props {
   book: Book;
   memos: Memo[];
-  onClick?: () => void;
+  onClick?: (skipHistory?: boolean) => void;
   onSafeNavigate: (action: () => void) => void;
 }
 
 export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick, onSafeNavigate }) => {
-  const { id: activeId, memoId: activeMemoId } = useParams();
+  const { bookId: activeId, id: activeMemoId } = useParams();
   const { t, language } = useLanguage();
   const { searchQuery } = useSearch();
   const { theme } = useTheme();
-  const location = useLocation();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(true);
 
-  const isAtRoot = location.pathname === '/' || location.pathname === '';
 
   const progressPercent = book.totalPages > 0
     ? Math.round(((book.currentPage || 0) / book.totalPages) * 100)
@@ -117,17 +115,19 @@ export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick, onSafeN
   const handleBookClick = (e: React.MouseEvent) => {
     e.preventDefault();
     onSafeNavigate(() => {
-      // If we are already on a detail page, replace history instead of pushing
-      navigate(`/book/${book.id}`, { replace: !isAtRoot });
-      if (onClick) onClick();
+      // Always replace when coming from sidebar to properly consume the sidebar-open state entry.
+      // We pass isGuard: true to satisfy AndroidExitHandler without pushing extra entries.
+      navigate(`/book/${book.id}`, { replace: true, state: { isGuard: true } });
+      if (onClick) onClick(true);
     });
   };
 
   const handleMemoClick = (memoId: number) => {
     onSafeNavigate(() => {
-      // Always use replace for sibling memo navigation to flatten history
-      navigate(`/memo/${memoId}`, { replace: !isAtRoot });
-      if (onClick) onClick();
+      // Always replace when coming from sidebar to properly consume the sidebar-open state entry.
+      // We pass isGuard: true to satisfy AndroidExitHandler without pushing extra entries.
+      navigate(`/book/${book.id}/memo/${memoId}`, { replace: true, state: { isGuard: true } });
+      if (onClick) onClick(true);
     });
   };
 
@@ -180,7 +180,7 @@ export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick, onSafeN
             return (
               <MemoItemLink
                 key={memo.id}
-                to={`/memo/${memo.id}`}
+                to={`/book/${book.id}/memo/${memo.id}`}
                 $isActive={activeMemoId === String(memo.id)}
                 $inThread={true}
                 onClick={(e) => {
