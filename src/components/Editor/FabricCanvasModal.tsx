@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import styled from 'styled-components';
 import { fabric } from 'fabric';
-import { FiX, FiCheck, FiTrash2, FiRotateCcw, FiRotateCw, FiSquare, FiCircle, FiMinus, FiType, FiArrowDown, FiTriangle, FiMousePointer, FiDownload, FiSettings } from 'react-icons/fi';
+import { FiX, FiCheck, FiMousePointer, FiMinus, FiSquare, FiCircle, FiTriangle, FiType, FiArrowDown, FiSettings, FiRotateCcw, FiRotateCw, FiDownload, FiTrash2 } from 'react-icons/fi';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { HexColorPicker } from 'react-colorful';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useExitGuard, ExitGuardResult } from '../../contexts/ExitGuardContext';
-import { Toast } from '../UI/Toast';
-import { FiAlertTriangle } from 'react-icons/fi';
+import { useExitGuard } from '../../contexts/ExitGuardContext';
+
 
 // Pixel Eraser Icon - 3D pink block eraser
 const PixelEraserIcon = () => (
@@ -811,8 +810,6 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
 
     // Guard State
     const { registerGuard, unregisterGuard } = useExitGuard();
-    const [showExitToast, setShowExitToast] = useState(false);
-    const lastBackPress = useRef(0);
     const isClosingRef = useRef(false);
 
     const handleActualClose = useRef(propsOnClose);
@@ -828,30 +825,36 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
         }
     };
 
-    useEffect(() => {
-        // Push state to enable back button trapping
-        window.history.pushState({ fabricOpen: true }, '');
+    useLayoutEffect(() => {
+        // Push state to enable back button trapping, include isGuard to keep handler happy
+        window.history.pushState({ fabricOpen: true, isGuard: true }, '');
 
-        const guardId = 'fabric-canvas-guard';
+        const guardId = 'fabric-canvas-guard-modal';
         registerGuard(guardId, () => {
             if (isClosingRef.current) {
                 handleActualClose.current();
-                return ExitGuardResult.ALLOW_NAVIGATION;
+                return 'ALLOW' as any;
             }
 
-            const now = Date.now();
-            if (now - lastBackPress.current < 2000) {
-                isClosingRef.current = true;
-                handleActualClose.current();
-                return ExitGuardResult.ALLOW_NAVIGATION;
-            } else {
-                lastBackPress.current = now;
-                setShowExitToast(true);
-                return ExitGuardResult.PREVENT_NAVIGATION;
-            }
+            // Disable back button for this modal
+            return 'PREVENT' as any;
         });
 
-        return () => unregisterGuard(guardId);
+        // Direct popstate handler to ensure we intercept before AndroidExitHandler
+        const handlePopState = (e: PopStateEvent) => {
+            if (isClosingRef.current) return;
+
+            // Re-push state to effectively cancel the back navigation
+            e.preventDefault();
+            window.history.pushState({ fabricOpen: true, isGuard: true }, '');
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            unregisterGuard(guardId);
+            window.removeEventListener('popstate', handlePopState);
+        };
     }, [registerGuard, unregisterGuard]);
 
 
@@ -3000,39 +3003,34 @@ export const FabricCanvasModal: React.FC<FabricCanvasModalProps> = ({ initialDat
                     }}
                     onClose={() => setIsConfigOpen(false)}
                 />
-            )}
-            {isExitConfirmOpen && (
-                <ModalOverlay style={{ zIndex: 12000 }}>
-                    <CompactModal onClick={e => e.stopPropagation()} style={{ padding: '20px', minWidth: '300px', maxWidth: '90vw' }}>
-                        <h3 style={{ marginTop: 0, fontSize: '1.2rem', color: '#333' }}>
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {(t.drawing as any)?.exit_title || 'Exit Drawing?'}
-                        </h3>
-                        <p style={{ color: '#555', lineHeight: '1.5', margin: '10px 0 20px 0' }}>
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {(t.drawing as any)?.cancel_confirm || 'Are you sure you want to discard your changes?'}
-                        </p>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                            <CompactModalButton onClick={() => setIsExitConfirmOpen(false)} style={{ padding: '8px 16px' }}>
-                                {t.drawing?.cancel || 'Cancel'}
-                            </CompactModalButton>
-                            <CompactModalButton $variant="danger" onClick={handleConfirmExit} style={{ padding: '8px 16px', background: '#e03131', color: 'white', border: 'none' }}>
+            )
+            }
+            {
+                isExitConfirmOpen && (
+                    <ModalOverlay style={{ zIndex: 12000 }}>
+                        <CompactModal onClick={e => e.stopPropagation()} style={{ padding: '20px', minWidth: '300px', maxWidth: '90vw' }}>
+                            <h3 style={{ marginTop: 0, fontSize: '1.2rem', color: '#333' }}>
                                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                {(t.drawing as any)?.discard || 'Discard'}
-                            </CompactModalButton>
-                        </div>
-                    </CompactModal>
-                </ModalOverlay>
-            )}
-            {showExitToast && (
-                <Toast
-                    variant="warning"
-                    position="centered"
-                    icon={<FiAlertTriangle size={14} />}
-                    message={t.android?.exit_warning || "Press back again to close."}
-                    onClose={() => setShowExitToast(false)}
-                />
-            )}
+                                {(t.drawing as any)?.exit_title || 'Exit Drawing?'}
+                            </h3>
+                            <p style={{ color: '#555', lineHeight: '1.5', margin: '10px 0 20px 0' }}>
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                {(t.drawing as any)?.cancel_confirm || 'Are you sure you want to discard your changes?'}
+                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                <CompactModalButton onClick={() => setIsExitConfirmOpen(false)} style={{ padding: '8px 16px' }}>
+                                    {t.drawing?.cancel || 'Cancel'}
+                                </CompactModalButton>
+                                <CompactModalButton $variant="danger" onClick={handleConfirmExit} style={{ padding: '8px 16px', background: '#e03131', color: 'white', border: 'none' }}>
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {(t.drawing as any)?.discard || 'Discard'}
+                                </CompactModalButton>
+                            </div>
+                        </CompactModal>
+                    </ModalOverlay>
+                )
+            }
+
         </>
     );
 };

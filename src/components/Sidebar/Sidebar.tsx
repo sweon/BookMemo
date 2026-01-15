@@ -12,7 +12,10 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useSearch } from '../../contexts/SearchContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SidebarBookItem } from './SidebarBookItem';
-import { AddBookModal } from '../BookView/AddBookModal';
+
+
+
+import { ConfirmModal } from '../UI/ConfirmModal';
 
 import pkg from '../../../package.json';
 
@@ -231,10 +234,10 @@ const AppVersion = styled.span`
 
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const { searchQuery, setSearchQuery } = useSearch();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'last-memo-desc' | 'last-comment-desc'>('date-desc');
-  const [isAddBookModalOpen, setIsAddBookModalOpen] = useState(false);
+
 
   const { mode, toggleTheme, increaseFontSize, decreaseFontSize, theme } = useTheme();
   const navigate = useNavigate();
@@ -243,7 +246,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateCheckedManually, setUpdateCheckedManually] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, message: '', onConfirm: () => { } });
   const needRefreshRef = useRef(false);
+
+  const handleSafeNavigation = (action: () => void) => {
+    if (location.pathname === '/book/new') {
+      setConfirmModal({
+        isOpen: true,
+        message: language === 'ko' ? '작성 중인 내용이 저장되지 않았습니다. 이동하시겠습니까?' : 'Unsaved changes will be lost. Continue?',
+        onConfirm: () => {
+          action();
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      });
+    } else {
+      action();
+    }
+  };
 
   const {
     needRefresh: [needRefresh],
@@ -385,7 +408,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       <Header>
         <TopActions>
           <Button onClick={() => {
-            setIsAddBookModalOpen(true);
+            navigate('/book/new');
             onCloseMobile();
           }}>
             <FiPlus />
@@ -446,9 +469,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
 
             <Tooltip content={t.sidebar.settings}>
               <IconButton onClick={() => {
-                const isAtRoot = location.pathname === '/' || location.pathname === '';
-                navigate('/settings', { replace: !isAtRoot });
-                onCloseMobile();
+                handleSafeNavigation(() => {
+                  const isAtRoot = location.pathname === '/' || location.pathname === '';
+                  navigate('/settings', { replace: !isAtRoot });
+                  onCloseMobile();
+                });
               }}>
                 <FiSettings size={18} />
               </IconButton>
@@ -499,19 +524,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             book={book}
             memos={allMemos?.filter(m => m.bookId === book.id) || []}
             onClick={onCloseMobile}
+            onSafeNavigate={handleSafeNavigation}
           />
         ))}
       </BookList>
 
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
       <SyncModal isOpen={isSyncModalOpen} onClose={() => setIsSyncModalOpen(false)} />
       {
         toastMessage && (
           <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
         )
       }
-      {isAddBookModalOpen && (
-        <AddBookModal onClose={() => setIsAddBookModalOpen(false)} />
-      )}
+
     </SidebarContainer >
   );
 };

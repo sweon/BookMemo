@@ -15,7 +15,7 @@ import {
   ComposedChart,
   ReferenceArea
 } from 'recharts';
-import { AddBookModal } from './AddBookModal';
+
 
 const Container = styled.div`
   flex: 1;
@@ -226,7 +226,7 @@ export const BookDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+
   const [refAreaLeft, setRefAreaLeft] = React.useState<any>(null);
   const [refAreaRight, setRefAreaRight] = React.useState<any>(null);
   const [zoomDomain, setZoomDomain] = React.useState<[any, any] | null>(null);
@@ -492,7 +492,7 @@ export const BookDetail: React.FC = () => {
           <ActionButton onClick={() => navigate(`/book/${book.id}/new`)}>
             <FiEdit3 /> {t.book_detail.write_memo}
           </ActionButton>
-          <ActionButton style={{ background: '#64748b' }} onClick={() => setIsEditModalOpen(true)}>
+          <ActionButton style={{ background: '#64748b' }} onClick={() => navigate(`/book/${book.id}/edit`)}>
             <FiEdit3 /> {t.book_detail.edit_book}
           </ActionButton>
           <ActionButton style={{ background: '#ef4444' }} onClick={handleDelete}>
@@ -712,14 +712,7 @@ export const BookDetail: React.FC = () => {
           </div>
         )}
       </MemoListSection>
-      {
-        isEditModalOpen && (
-          <AddBookModal
-            onClose={() => setIsEditModalOpen(false)}
-            editTarget={book}
-          />
-        )
-      }
+
     </Container >
   );
 };

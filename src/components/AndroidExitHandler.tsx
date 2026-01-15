@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Toast } from './UI/Toast';
 import { FiAlertTriangle } from 'react-icons/fi';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useExitGuard } from '../contexts/ExitGuardContext';
+import { useExitGuard, ExitGuardResult } from '../contexts/ExitGuardContext';
 
 export const AndroidExitHandler: React.FC = () => {
     const location = useLocation();
@@ -31,14 +31,19 @@ export const AndroidExitHandler: React.FC = () => {
         ensureGuardState();
 
         const handlePopState = (event: PopStateEvent) => {
+            // Skip entirely if Fabric canvas modal is open (it handles its own back button)
+            if (window.history.state?.fabricOpen) {
+                return;
+            }
+
             // Check guards first
             const guardResult = checkGuards();
-            if (guardResult === 'PREVENT') { // ExitGuardResult.PREVENT_NAVIGATION
+            if (guardResult === ExitGuardResult.PREVENT_NAVIGATION || (guardResult as string) === 'PREVENT') {
                 // Restore state (undo pop)
                 window.history.pushState({ isGuard: true }, '');
                 return;
             }
-            if (guardResult === 'ALLOW') { // ExitGuardResult.ALLOW_NAVIGATION
+            if (guardResult === ExitGuardResult.ALLOW_NAVIGATION || (guardResult as string) === 'ALLOW') {
                 // Accept pop (do nothing, let it be)
                 return;
             }

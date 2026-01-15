@@ -78,9 +78,10 @@ interface Props {
   book: Book;
   memos: Memo[];
   onClick?: () => void;
+  onSafeNavigate: (action: () => void) => void;
 }
 
-export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick }) => {
+export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick, onSafeNavigate }) => {
   const { id: activeId, memoId: activeMemoId } = useParams();
   const { t, language } = useLanguage();
   const { searchQuery } = useSearch();
@@ -115,15 +116,19 @@ export const SidebarBookItem: React.FC<Props> = ({ book, memos, onClick }) => {
 
   const handleBookClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    // If we are already on a detail page, replace history instead of pushing
-    navigate(`/book/${book.id}`, { replace: !isAtRoot });
-    if (onClick) onClick();
+    onSafeNavigate(() => {
+      // If we are already on a detail page, replace history instead of pushing
+      navigate(`/book/${book.id}`, { replace: !isAtRoot });
+      if (onClick) onClick();
+    });
   };
 
   const handleMemoClick = (memoId: number) => {
-    // Always use replace for sibling memo navigation to flatten history
-    navigate(`/memo/${memoId}`, { replace: !isAtRoot });
-    if (onClick) onClick();
+    onSafeNavigate(() => {
+      // Always use replace for sibling memo navigation to flatten history
+      navigate(`/memo/${memoId}`, { replace: !isAtRoot });
+      if (onClick) onClick();
+    });
   };
 
   // Sort memos by page number, then date

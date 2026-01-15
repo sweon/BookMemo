@@ -2,16 +2,12 @@
 description: Automatically push to GitHub when mobile or Android issues are addressed.
 ---
 
-When a task involves fixing or improving behavior for 'mobile' or 'Android' (e.g., UI layout, back button, keyboard behavior):
+1. When the user mentions "Android" or "mobile" in their request, specifically regarding UI/UX fixes or adjustments.
+2. After implementing the requested code changes.
+3. Automatically run the git push sequence without asking for further confirmation.
 
-1. **Verify Changes**: Ensure the code is correctly implemented and lint-free.
-2. **Stage and Commit**: Stage all relevant files.
-// turbo
-3. **Commit and Push**: Use a descriptive commit message and push to the `main` branch immediately.
-
-Example command:
-```bash
-git add . && git commit -m "Fix: [Description of mobile/Android fix]" && git push
-```
-
-Rationale: Pushing immediately allows the USER to test on physical devices or emulators via the deployed application or PWA updates.
+// turbo-all
+4. Run `git status` to check for changes.
+5. Run `git add .` (or specific files)
+6. Run `git commit -m "Fix mobile/Android issue: [Brief description of change]"`
+7. Run `git push`

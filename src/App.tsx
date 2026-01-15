@@ -5,6 +5,8 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { ExitGuardProvider } from './contexts/ExitGuardContext';
 import { MainLayout } from './components/Layout/MainLayout';
 import { BookDetail } from './components/BookView/BookDetail';
+import { AddBookPage } from './components/BookView/AddBookPage';
+import { EditBookPage } from './components/BookView/EditBookPage';
 import { MemoDetail } from './components/LogView/MemoDetail';
 import { EmptyState } from './components/LogView/EmptyState';
 import { SettingsPage } from './pages/SettingsPage';
@@ -21,6 +23,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<MainLayout />}>
                   <Route index element={<EmptyState />} />
+                  <Route path="book/new" element={<AddBookPage />} />
+                  <Route path="book/:id/edit" element={<EditBookPage />} />
                   <Route path="book/:id" element={<BookDetail />} />
                   <Route path="book/:bookId/new" element={<MemoDetail />} />
                   <Route path="memo/:id" element={<MemoDetail />} />
