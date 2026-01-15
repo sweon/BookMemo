@@ -10,7 +10,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 const Container = styled.div`
   max-width: 1000px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 24px 32px;
   width: 100%;
   height: 100%;
   overflow-y: auto;
@@ -18,15 +18,15 @@ const Container = styled.div`
   flex-direction: column;
   
   @media (max-width: 768px) {
-    padding: 1rem;
+    padding: 16px 16px;
   }
 `;
 
 const Header = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 2rem;
-  gap: 1rem;
+  margin-bottom: 1rem;
+  gap: 0.5rem;
 
   h2 {
     margin: 0;
@@ -41,16 +41,15 @@ const BackButton = styled.button`
   border: none;
   cursor: pointer;
   color: ${({ theme }) => theme.colors.textSecondary};
-  padding: 8px;
+  padding: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
+  gap: 0.5rem;
+  font-size: 0.95rem;
   transition: all 0.2s;
   
   &:hover {
     color: ${({ theme }) => theme.colors.text};
-    background: ${({ theme }) => theme.colors.border}44;
   }
 `;
 
@@ -160,156 +159,156 @@ const Button = styled.button`
 `;
 
 const formatDateForInput = (date: Date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 };
 
 export const EditBookPage: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
-    const { t, language } = useLanguage();
-    const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { t, language } = useLanguage();
+  const navigate = useNavigate();
 
-    const book = useLiveQuery(() => db.books.get(Number(id)), [id]);
+  const book = useLiveQuery(() => db.books.get(Number(id)), [id]);
 
-    const [title, setTitle] = useState('');
-    const [author, setAuthor] = useState('');
-    const [totalPages, setTotalPages] = useState('');
-    const [startDate, setStartDate] = useState('');
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [totalPages, setTotalPages] = useState('');
+  const [startDate, setStartDate] = useState('');
 
-    useEffect(() => {
-        if (book) {
-            setTitle(book.title);
-            setAuthor(book.author || '');
-            setTotalPages(String(book.totalPages));
-            setStartDate(
-                language === 'ko'
-                    ? format(book.startDate, 'yyyy. MM. dd.')
-                    : formatDateForInput(book.startDate)
-            );
-        }
-    }, [book, language]);
+  useEffect(() => {
+    if (book) {
+      setTitle(book.title);
+      setAuthor(book.author || '');
+      setTotalPages(String(book.totalPages));
+      setStartDate(
+        language === 'ko'
+          ? format(book.startDate, 'yyyy. MM. dd.')
+          : formatDateForInput(book.startDate)
+      );
+    }
+  }, [book, language]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!title.trim() || !totalPages || !book) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !totalPages || !book) return;
 
-        let parsedDate: Date;
-        if (language === 'ko' && /^\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.?$/.test(startDate)) {
-            const parts = startDate.split('.').map(s => s.trim()).filter(Boolean);
-            parsedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else {
-            parsedDate = new Date(startDate + 'T00:00:00');
-        }
-
-        if (isNaN(parsedDate.getTime())) {
-            parsedDate = book.startDate;
-        }
-
-        try {
-            await db.books.update(book.id!, {
-                title: title.trim(),
-                author: author.trim(),
-                totalPages: parseInt(totalPages, 10),
-                startDate: parsedDate,
-                updatedAt: new Date()
-            });
-            navigate(`/book/${book.id}`, { replace: true });
-        } catch (error) {
-            console.error('Failed to update book:', error);
-            alert('Failed to update book');
-        }
-    };
-
-    const handleBack = () => {
-        navigate(-1);
-    };
-
-    if (!book) {
-        return <Container><p>{t.memo_detail.loading}</p></Container>;
+    let parsedDate: Date;
+    if (language === 'ko' && /^\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.?$/.test(startDate)) {
+      const parts = startDate.split('.').map(s => s.trim()).filter(Boolean);
+      parsedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    } else {
+      parsedDate = new Date(startDate + 'T00:00:00');
     }
 
-    return (
-        <Container>
-            <Header>
-                <BackButton onClick={handleBack} title="Back">
-                    <FiArrowLeft size={24} />
-                </BackButton>
-                <h2>{t.book_detail.edit_book}</h2>
-            </Header>
-            <Form onSubmit={handleSubmit}>
-                <FormGroup>
-                    <Label>{t.book_detail.title}</Label>
-                    <Input
-                        value={title}
-                        onChange={e => setTitle(e.target.value)}
-                        placeholder={t.book_detail.title}
-                        required
-                        autoFocus
-                    />
-                </FormGroup>
-                <FormGroup>
-                    <Label>{t.book_detail.author_label}</Label>
-                    <Input
-                        value={author}
-                        onChange={e => setAuthor(e.target.value)}
-                        placeholder={t.book_detail.author_label}
-                    />
-                </FormGroup>
-                <FormGroup>
-                    <Label>{t.book_detail.pages}</Label>
-                    <Input
-                        type="number"
-                        value={totalPages}
-                        onChange={e => setTotalPages(e.target.value)}
-                        placeholder={t.book_detail.pages}
-                        required
-                        min="1"
-                    />
-                </FormGroup>
-                <FormGroup>
-                    <Label>{t.book_detail.started}</Label>
-                    <InputWrapper>
-                        <Input
-                            type={language === 'ko' ? 'text' : 'date'}
-                            value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                            placeholder={language === 'ko' ? 'YYYY. MM. DD.' : undefined}
-                            required
-                        />
-                        <CalendarIcon onClick={() => {
-                            const hiddenInput = document.getElementById('hidden-date-picker-edit');
-                            if (hiddenInput) {
-                                (hiddenInput as any).showPicker?.() || hiddenInput.click();
-                            }
-                        }} style={{ cursor: 'pointer', pointerEvents: 'auto' }} />
-                        {language === 'ko' && (
-                            <input
-                                id="hidden-date-picker-edit"
-                                type="date"
-                                style={{
-                                    position: 'absolute',
-                                    opacity: 0,
-                                    width: 0,
-                                    height: 0,
-                                    padding: 0,
-                                    border: 'none'
-                                }}
-                                onChange={(e) => {
-                                    const d = new Date(e.target.value);
-                                    if (!isNaN(d.getTime())) {
-                                        setStartDate(format(d, 'yyyy. MM. dd.'));
-                                    }
-                                }}
-                            />
-                        )}
-                    </InputWrapper>
-                </FormGroup>
-                <Button type="submit">
-                    <FiCheck /> {language === 'ko' ? '저장' : 'Save'}
-                </Button>
-            </Form>
-        </Container>
-    );
+    if (isNaN(parsedDate.getTime())) {
+      parsedDate = book.startDate;
+    }
+
+    try {
+      await db.books.update(book.id!, {
+        title: title.trim(),
+        author: author.trim(),
+        totalPages: parseInt(totalPages, 10),
+        startDate: parsedDate,
+        updatedAt: new Date()
+      });
+      navigate(`/book/${book.id}`, { replace: true });
+    } catch (error) {
+      console.error('Failed to update book:', error);
+      alert('Failed to update book');
+    }
+  };
+
+  const handleBack = () => {
+    navigate(`/book/${id}`);
+  };
+
+  if (!book) {
+    return <Container><p>{t.memo_detail.loading}</p></Container>;
+  }
+
+  return (
+    <Container>
+      <Header>
+        <BackButton onClick={handleBack}>
+          <FiArrowLeft size={16} />
+          {language === 'ko' ? `${book.title}(으)로` : `Back to ${book.title}`}
+        </BackButton>
+      </Header>
+      <Form onSubmit={handleSubmit}>
+        <FormGroup>
+          <Label>{t.book_detail.title}</Label>
+          <Input
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder={t.book_detail.title}
+            required
+            autoFocus
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>{t.book_detail.author_label}</Label>
+          <Input
+            value={author}
+            onChange={e => setAuthor(e.target.value)}
+            placeholder={t.book_detail.author_label}
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>{t.book_detail.pages}</Label>
+          <Input
+            type="number"
+            value={totalPages}
+            onChange={e => setTotalPages(e.target.value)}
+            placeholder={t.book_detail.pages}
+            required
+            min="1"
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>{t.book_detail.started}</Label>
+          <InputWrapper>
+            <Input
+              type={language === 'ko' ? 'text' : 'date'}
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              placeholder={language === 'ko' ? 'YYYY. MM. DD.' : undefined}
+              required
+            />
+            <CalendarIcon onClick={() => {
+              const hiddenInput = document.getElementById('hidden-date-picker-edit');
+              if (hiddenInput) {
+                (hiddenInput as any).showPicker?.() || hiddenInput.click();
+              }
+            }} style={{ cursor: 'pointer', pointerEvents: 'auto' }} />
+            {language === 'ko' && (
+              <input
+                id="hidden-date-picker-edit"
+                type="date"
+                style={{
+                  position: 'absolute',
+                  opacity: 0,
+                  width: 0,
+                  height: 0,
+                  padding: 0,
+                  border: 'none'
+                }}
+                onChange={(e) => {
+                  const d = new Date(e.target.value);
+                  if (!isNaN(d.getTime())) {
+                    setStartDate(format(d, 'yyyy. MM. dd.'));
+                  }
+                }}
+              />
+            )}
+          </InputWrapper>
+        </FormGroup>
+        <Button type="submit">
+          <FiCheck /> {language === 'ko' ? '저장' : 'Save'}
+        </Button>
+      </Form>
+    </Container>
+  );
 };
