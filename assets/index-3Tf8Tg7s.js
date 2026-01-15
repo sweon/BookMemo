@@ -996,7 +996,7 @@ ${Le.current.stack}
   border-right: ${e=>e.$isMemoOpen?`1px solid ${e.theme.colors.border}`:"none"};
   transition: all 0.2s ease;
   
-  @media (max-width: 1024px) {
+  @media (max-width: 1350px) {
     display: ${e=>e.$isMemoOpen?"none":"flex"};
   }
 `,Lge=Gt.div`
@@ -1005,7 +1005,7 @@ ${Le.current.stack}
   overflow-y: auto;
   background: ${({theme:e})=>e.colors.surface};
   
-  @media (max-width: 1024px) {
+  @media (max-width: 1350px) {
     flex: 1;
   }
 `,Bge=Gt.div`
