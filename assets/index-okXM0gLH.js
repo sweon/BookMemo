@@ -988,26 +988,17 @@ ${Le.current.stack}
   overflow: hidden;
   background: ${({theme:e})=>e.colors.background};
 `,Nge=Gt.div`
+  display: ${e=>e.$isMemoOpen?"none":"flex"};
   flex: 1;
-  display: flex;
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
-  border-right: ${e=>e.$isMemoOpen?`1px solid ${e.theme.colors.border}`:"none"};
   transition: all 0.2s ease;
-  
-  @media (max-width: 1350px) {
-    display: ${e=>e.$isMemoOpen?"none":"flex"};
-  }
 `,Lge=Gt.div`
   flex: 1;
   height: 100%;
   overflow-y: auto;
   background: ${({theme:e})=>e.colors.surface};
-  
-  @media (max-width: 1350px) {
-    flex: 1;
-  }
 `,Bge=Gt.div`
   padding: 1rem 2rem 2rem 2rem;
   background: ${({theme:e})=>e.colors.surface};
