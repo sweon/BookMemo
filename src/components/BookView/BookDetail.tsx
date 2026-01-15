@@ -34,7 +34,7 @@ const LeftPane = styled.div<{ $isMemoOpen: boolean }>`
   border-right: ${props => props.$isMemoOpen ? `1px solid ${props.theme.colors.border}` : 'none'};
   transition: all 0.2s ease;
   
-  @media (max-width: 1024px) {
+  @media (max-width: 1350px) {
     display: ${props => props.$isMemoOpen ? 'none' : 'flex'};
   }
 `;
@@ -45,7 +45,7 @@ const RightPane = styled.div`
   overflow-y: auto;
   background: ${({ theme }) => theme.colors.surface};
   
-  @media (max-width: 1024px) {
+  @media (max-width: 1350px) {
     flex: 1;
   }
 `;
