@@ -26,17 +26,12 @@ const Container = styled.div`
 `;
 
 const LeftPane = styled.div<{ $isMemoOpen: boolean }>`
+  display: ${props => props.$isMemoOpen ? 'none' : 'flex'};
   flex: 1;
-  display: flex;
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
-  border-right: ${props => props.$isMemoOpen ? `1px solid ${props.theme.colors.border}` : 'none'};
   transition: all 0.2s ease;
-  
-  @media (max-width: 1350px) {
-    display: ${props => props.$isMemoOpen ? 'none' : 'flex'};
-  }
 `;
 
 const RightPane = styled.div`
@@ -44,10 +39,6 @@ const RightPane = styled.div`
   height: 100%;
   overflow-y: auto;
   background: ${({ theme }) => theme.colors.surface};
-  
-  @media (max-width: 1350px) {
-    flex: 1;
-  }
 `;
 
 const Header = styled.div`
